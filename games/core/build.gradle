@@ -1,0 +1,41 @@
+plugins {
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+
+}
+
+apply plugin: 'application'
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+
+  if(enableGraalNative == 'true') {
+    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
+  }
+  implementation 'org.java-websocket:Java-WebSocket:1.5.4'
+  implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+application {
+    mainClass = 'io.github.Games.Drop.WebGameServer'
+}
+task runMain(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = 'io.github.Games.Drop.Main'
+}
+
+shadowJar {
+  archiveBaseName.set('drop-server')
+  archiveVersion.set('1.0.0')
+  manifest {
+    attributes 'Main-Class': 'io.github.Games.Drop.WebGameServer'
+  }
+}

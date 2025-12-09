@@ -1,0 +1,8 @@
+# Dockerfile for Drop Game LibGDX Client
+FROM eclipse-temurin:8-jre
+WORKDIR /app
+COPY lwjgl3/build/libs/Games-1.0.0.jar /app/Games-1.0.0.jar
+COPY assets /app/assets
+ENV GAME_SERVER_URI=ws://localhost:8887
+ENV DISPLAY=:0
+CMD ["java", "-jar", "Games-1.0.0.jar"]
