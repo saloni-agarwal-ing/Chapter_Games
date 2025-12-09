@@ -201,3 +201,27 @@ If your client needs to specify server IP or player name via command-line or env
 6. Click “Deploy” and wait for the build to finish.
 7. Railway will provide a public domain and port (e.g., `your-app.up.railway.app:12345`).
 8. Share this address and port with your players. Clients should use this address to connect.
+
+---
+
+## How to Remove git from the Project
+
+If you want to completely remove git tracking and history from this project:
+
+1. Open a terminal in your project directory.
+2. Run:
+   ```
+   rm -rf .git
+   ```
+   This deletes all git history and configuration.
+3. Optionally, remove `.gitignore` and `.gitattributes` files:
+   ```
+   rm -f .gitignore .gitattributes
+   ```
+4. To verify removal, run:
+   ```
+   git status
+   ```
+   You should see: `fatal: not a git repository (or any of the parent directories): .git`
+
+You can re-initialize git later with `git init` if needed.
