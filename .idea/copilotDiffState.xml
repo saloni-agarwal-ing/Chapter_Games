@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/untitled folder/core/src/main/java/io/github/Games/Drop/ShapeDemo.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/untitled folder/core/src/main/java/io/github/Games/Drop/ShapeDemo.java" />
+              <option name="originalContent" value="abstract class Shape {&#10;    protected Renderer renderer;&#10;    public Shape(Renderer renderer) {&#10;        this.renderer = renderer;&#10;    }&#10;    public abstract String getName();&#10;    @Override&#10;    public String toString() {&#10;        return String.format(&quot;Drawing %s as %s&quot;, getName(), renderer.whatToRenderAs());&#10;    }&#10;}&#10;&#10;class Triangle extends Shape&#10;{&#10;    public Triangle(Renderer renderer) {&#10;        super(renderer);&#10;    }&#10;    @Override&#10;    public String getName() {&#10;        return &quot;Triangle&quot;;&#10;    }&#10;}&#10;&#10;class Square extends Shape&#10;{&#10;    public Square(Renderer renderer) {&#10;        super(renderer);&#10;    }&#10;    @Override&#10;    public String getName() {&#10;        return &quot;Square&quot;;&#10;    }&#10;}&#10;&#10;class VectorSquare extends Square&#10;{&#10;    @Override&#10;    public String toString()&#10;    {&#10;        return String.format(&quot;Drawing %s as lines&quot;, getName());&#10;    }&#10;}&#10;&#10;class RasterSquare extends Square&#10;{&#10;    @Override&#10;    public String toString()&#10;    {&#10;        return String.format(&quot;Drawing %s as pixels&quot;, getName());&#10;    }&#10;}&#10;&#10;// imagine VectorTriangle and RasterTriangle are here too&#10;" />
+              <option name="updatedContent" value="interface Renderer {&#10;    String whatToRenderAs();&#10;}&#10;&#10;class VectorRenderer implements Renderer {&#10;    @Override&#10;    public String whatToRenderAs() {&#10;        return &quot;lines&quot;;&#10;    }&#10;}&#10;&#10;class RasterRenderer implements Renderer {&#10;    @Override&#10;    public String whatToRenderAs() {&#10;        return &quot;pixels&quot;;&#10;    }&#10;}&#10;&#10;abstract class Shape {&#10;    protected Renderer renderer;&#10;    public Shape(Renderer renderer) {&#10;        this.renderer = renderer;&#10;    }&#10;    public abstract String getName();&#10;    @Override&#10;    public String toString() {&#10;        return String.format(&quot;Drawing %s as %s&quot;, getName(), renderer.whatToRenderAs());&#10;    }&#10;}&#10;&#10;class Triangle extends Shape&#10;{&#10;    public Triangle(Renderer renderer) {&#10;        super(renderer);&#10;    }&#10;    @Override&#10;    public String getName() {&#10;        return &quot;Triangle&quot;;&#10;    }&#10;}&#10;&#10;class Square extends Shape&#10;{&#10;    public Square(Renderer renderer) {&#10;        super(renderer);&#10;    }&#10;    @Override&#10;    public String getName() {&#10;        return &quot;Square&quot;;&#10;    }&#10;}&#10;&#10;public class ShapeDemo {&#10;    public static void main(String[] args) {&#10;        Shape triangle = new Triangle(new RasterRenderer());&#10;        Shape square = new Square(new VectorRenderer());&#10;        System.out.println(triangle); // Drawing Triangle as pixels&#10;        System.out.println(square);   // Drawing Square as lines&#10;    }&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
