@@ -67,7 +67,6 @@ docker pull yu69yj/drop-client:latest
 ```
 
 ---
-
 ## 3. Find Your Server IP Address
 
 Run:
