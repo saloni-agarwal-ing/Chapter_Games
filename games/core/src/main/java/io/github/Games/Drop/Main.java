@@ -102,7 +102,10 @@ public class Main extends ApplicationAdapter {
 
     private void connectWebSocket() {
         try {
-            wsClient = new WebSocketClient(new URI(getServerUri())) {
+
+            URI uri = new URI(getServerUri());
+
+            wsClient = new WebSocketClient(uri) {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) {
                     Map<String, Object> join = new HashMap<>();
@@ -177,6 +180,13 @@ public class Main extends ApplicationAdapter {
                 @Override
                 public void onError(Exception ex) { ex.printStackTrace(); }
             };
+
+            if ("wss".equalsIgnoreCase(uri.getScheme())) {
+                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+                sslContext.init(null, null, null);
+                wsClient.setSocketFactory(sslContext.getSocketFactory());
+            }
+
             wsClient.connect();
         } catch (Exception e) {
             e.printStackTrace();

@@ -224,3 +224,10 @@ If you want to completely remove git tracking and history from this project:
    You should see: `fatal: not a git repository (or any of the parent directories): .git`
 
 You can re-initialize git later with `git init` if needed.
+
+
+nc -vz chapter-games-new.onrender.com 443
+curl -v https://chapter-games-new.onrender.com
+./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=wss://chapter-games-new.onrender.com
+./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=ws://chapter-games-new.onrender.com:8887
+docker run --env GAME_SERVER_URI=ws://chapter-games-new.onrender.com:8887 --env PLAYER_NAME=Erish yu69yj/drop-client:latest
