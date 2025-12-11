@@ -93,7 +93,7 @@ public class WebGameServer extends WebSocketServer {
             Integer playerId = connectionToPlayerId.get(conn);
             if (playerId == null) return;
             Double xObj = (Double) msg.get("x");
-            if xObj == null) return;
+            if (xObj == null) return;
             float x = xObj.floatValue();
             x = Math.max(0, Math.min(WORLD_WIDTH - BUCKET_WIDTH, x));
             bucketPositions.put(playerId, x);
