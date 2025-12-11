@@ -184,12 +184,11 @@ public class WebGameServer extends WebSocketServer {
     }
 
     public static void main(String[] args) {
-
         String host = "0.0.0.0";
-        int port = Integer.parseInt(Optional.ofNullable(System.getenv("PORT")).orElse("8887"));
+        // Use only the PORT environment variable, as required by Render.com web services
+        int port = Integer.parseInt(System.getenv("PORT"));
         WebGameServer server = new WebGameServer(port);
         server.start();
         System.out.printf("WebGameServer started on %s:%d%n", host, port);
-
     }
 }
