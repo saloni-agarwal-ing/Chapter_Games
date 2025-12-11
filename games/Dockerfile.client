@@ -3,7 +3,8 @@ FROM eclipse-temurin:8-jre
 WORKDIR /app
 COPY lwjgl3/build/libs/Games-1.0.0.jar /app/Games-1.0.0.jar
 COPY assets /app/assets
-# Change GAME_SERVER_URI to your Render.com public server address
-ENV GAME_SERVER_URI=ws://chapter-games-new:8887
-ENV DISPLAY=:0
+
+# Connect via WebSockets over HTTPS to the Render Web Service
+ENV GAME_SERVER_URI=wss://chapter-games-new.onrender.com
+
 CMD ["java", "-jar", "Games-1.0.0.jar"]

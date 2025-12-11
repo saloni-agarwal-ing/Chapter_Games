@@ -100,7 +100,7 @@ public class WebGameServer extends WebSocketServer {
         }
     }
 
-    
+
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         System.out.println("Connection closed: " + conn.getRemoteSocketAddress());
@@ -183,8 +183,12 @@ public class WebGameServer extends WebSocketServer {
     }
 
     public static void main(String[] args) {
-        int port = 8887;
+
+        String host = "0.0.0.0";
+        int port = Integer.parseInt(Optional.ofNullable(System.getenv("PORT")).orElse("8887"));
         WebGameServer server = new WebGameServer(port);
         server.start();
+        System.out.printf("WebGameServer started on %s:%d%n", host, port);
+
     }
 }
