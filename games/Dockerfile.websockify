@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 RUN pip install websockify
 # Entrypoint script will use $PORT and $TARGET_HOST:$TARGET_PORT
-COPY start-websockify.sh /app/start-websockify.sh
+COPY games/start-websockify.sh /app/start-websockify.sh
 RUN chmod +x /app/start-websockify.sh
 CMD ["/app/start-websockify.sh"]
 
