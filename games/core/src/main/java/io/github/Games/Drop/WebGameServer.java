@@ -25,7 +25,7 @@ public class WebGameServer extends WebSocketServer {
     private final float DROP_WIDTH = 0.7f;
     private final float DROP_HEIGHT = 0.7f;
     private final float DROP_SPEED = 2.5f;
-    private final float BUCKET_SPEED = 4f;
+    private final float BUCKET_SPEED = 2.5f;
     private final float DROP_SPAWN_INTERVAL = 1.0f; // seconds
     private Random random = new Random();
     private Map<Integer, String> pendingNames = new HashMap<>();
@@ -87,6 +87,14 @@ public class WebGameServer extends WebSocketServer {
             float delta = BUCKET_SPEED * 0.05f; // 50ms tick
             if ("left".equals(direction)) x -= delta;
             if ("right".equals(direction)) x += delta;
+            x = Math.max(0, Math.min(WORLD_WIDTH - BUCKET_WIDTH, x));
+            bucketPositions.put(playerId, x);
+        } else if ("moveTo".equals(type)) {
+            Integer playerId = connectionToPlayerId.get(conn);
+            if (playerId == null) return;
+            Double xObj = (Double) msg.get("x");
+            if (xObj == null) return;
+            float x = xObj.floatValue();
             x = Math.max(0, Math.min(WORLD_WIDTH - BUCKET_WIDTH, x));
             bucketPositions.put(playerId, x);
         }

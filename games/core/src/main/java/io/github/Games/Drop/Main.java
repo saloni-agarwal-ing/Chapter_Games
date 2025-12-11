@@ -56,6 +56,8 @@ public class Main extends ApplicationAdapter {
     private float dropHeight = 0.7f;
     BitmapFont font;
     private Map<Integer, String> playerColors = new HashMap<>();
+    private long lastMoveTime = 0;
+    private String lastDirectionSent = null;
 
     @Override
     public void create() {
@@ -191,6 +193,8 @@ public class Main extends ApplicationAdapter {
         if (myPlayerId == -1) return;
         boolean moved = false;
         String direction = null;
+        boolean mouseMoved = false;
+        float mouseTargetX = 0f;
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             direction = "left";
             moved = true;
@@ -201,17 +205,34 @@ public class Main extends ApplicationAdapter {
         // Mouse/touchpad movement
         if (Gdx.input.isTouched()) {
             float mouseX = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY())).x;
-            Float myBucketX = bucketPositions.get(myPlayerId);
-            if (myBucketX != null) {
-                float bucketCenter = myBucketX + bucketWidth / 2f;
-                if (Math.abs(mouseX - bucketCenter) > 0.05f) { // Add a small threshold
-                    direction = mouseX < bucketCenter ? "left" : "right";
-                    moved = true;
-                }
-            }
+            mouseTargetX = MathUtils.clamp(mouseX - bucketWidth / 2f, 0, worldWidth - bucketWidth);
+            mouseMoved = true;
         }
-        if (moved && direction != null) {
-            sendMove(direction);
+        long now = System.currentTimeMillis();
+        if (mouseMoved) {
+            if (now - lastMoveTime > 50) {
+                sendMoveTo(mouseTargetX);
+                lastMoveTime = now;
+            }
+            lastDirectionSent = null;
+        } else if (moved && direction != null) {
+            if (!direction.equals(lastDirectionSent) || now - lastMoveTime > 50) {
+                sendMove(direction);
+                lastMoveTime = now;
+                lastDirectionSent = direction;
+            }
+        } else {
+            lastDirectionSent = null;
+        }
+    }
+
+    private void sendMoveTo(float x) {
+        if (wsClient != null && wsClient.isOpen() && myPlayerId != -1) {
+            Map<String, Object> moveTo = new HashMap<>();
+            moveTo.put("type", "moveTo");
+            moveTo.put("playerId", myPlayerId);
+            moveTo.put("x", x);
+            wsClient.send(gson.toJson(moveTo));
         }
     }
 
