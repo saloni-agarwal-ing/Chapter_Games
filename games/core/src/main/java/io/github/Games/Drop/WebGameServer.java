@@ -32,7 +32,8 @@ public class WebGameServer extends WebSocketServer {
     private Map<Integer, String> playerColors = new HashMap<>(); // playerId -> color hex string
 
     public WebGameServer(int port) {
-        super(new InetSocketAddress(port));
+        super(new InetSocketAddress("0.0.0.0", port));
+        System.out.println("WebGameServer binding to 0.0.0.0 on port " + port);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -50,7 +51,6 @@ public class WebGameServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         System.out.println("Connection opened: " + conn.getRemoteSocketAddress());
-        // Wait for join message before assigning playerId
     }
 
     @Override
@@ -93,7 +93,7 @@ public class WebGameServer extends WebSocketServer {
             Integer playerId = connectionToPlayerId.get(conn);
             if (playerId == null) return;
             Double xObj = (Double) msg.get("x");
-            if (xObj == null) return;
+            if xObj == null) return;
             float x = xObj.floatValue();
             x = Math.max(0, Math.min(WORLD_WIDTH - BUCKET_WIDTH, x));
             bucketPositions.put(playerId, x);
@@ -119,6 +119,7 @@ public class WebGameServer extends WebSocketServer {
 
     @Override
     public void onError(WebSocket conn, Exception ex) {
+        System.out.println("WebSocket error: " + (conn != null ? conn.getRemoteSocketAddress() : "null") + " - " + ex.getMessage());
         ex.printStackTrace();
     }
 

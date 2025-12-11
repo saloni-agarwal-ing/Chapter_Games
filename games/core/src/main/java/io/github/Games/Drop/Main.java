@@ -102,12 +102,11 @@ public class Main extends ApplicationAdapter {
 
     private void connectWebSocket() {
         try {
-
             URI uri = new URI(getServerUri());
-
             wsClient = new WebSocketClient(uri) {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) {
+                    System.out.println("WebSocket connected to " + getServerUri());
                     Map<String, Object> join = new HashMap<>();
                     join.put("type", "join");
                     join.put("playerName", myName);
@@ -115,11 +114,14 @@ public class Main extends ApplicationAdapter {
                 }
                 @Override
                 public void onMessage(String message) {
+                    System.out.println("WebSocket received message: " + message);
                     Map<String, Object> msg = gson.fromJson(message, new TypeToken<Map<String, Object>>(){}.getType());
                     String type = (String) msg.get("type");
                     if ("welcome".equals(type)) {
                         myPlayerId = ((Double) msg.get("playerId")).intValue();
+                        System.out.println("Set myPlayerId to " + myPlayerId);
                     } else if ("gameState".equals(type)) {
+                        System.out.println("Received gameState: " + message);
                         // Update game state
                         // Parse scoreboard
                         Map<String, Double> rawScoreboard = (Map<String, Double>) msg.get("scoreboard");
@@ -146,6 +148,7 @@ public class Main extends ApplicationAdapter {
                                 bucketPositions.put(Integer.parseInt(entry.getKey()), entry.getValue().floatValue());
                             }
                         }
+                        System.out.println("Parsed bucketPositions: " + bucketPositions);
                         // Parse drops
                         List<Map<String, Object>> rawDrops = (List<Map<String, Object>>) msg.get("drops");
                         drops = new CopyOnWriteArrayList<>();
@@ -158,6 +161,7 @@ public class Main extends ApplicationAdapter {
                                 drops.add(parsedDrop);
                             }
                         }
+                        System.out.println("Parsed drops: " + drops);
                         // Parse world/game dimensions
                         worldWidth = ((Double) msg.get("worldWidth")).floatValue();
                         worldHeight = ((Double) msg.get("worldHeight")).floatValue();
@@ -176,19 +180,23 @@ public class Main extends ApplicationAdapter {
                     }
                 }
                 @Override
-                public void onClose(int code, String reason, boolean remote) {}
+                public void onClose(int code, String reason, boolean remote) {
+                    System.out.println("WebSocket closed: " + reason);
+                }
                 @Override
-                public void onError(Exception ex) { ex.printStackTrace(); }
+                public void onError(Exception ex) {
+                    System.out.println("WebSocket error: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
             };
-
             if ("wss".equalsIgnoreCase(uri.getScheme())) {
                 javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
                 sslContext.init(null, null, null);
                 wsClient.setSocketFactory(sslContext.getSocketFactory());
             }
-
             wsClient.connect();
         } catch (Exception e) {
+            System.out.println("WebSocket connection exception: " + e.getMessage());
             e.printStackTrace();
         }
     }
