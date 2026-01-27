@@ -50,17 +50,15 @@ public class WebGameServer extends WebSocketServer {
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        System.out.println("Connection opened: " + conn.getRemoteSocketAddress());
+        // Connection opened - no action needed
     }
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        System.out.println("Received message from " + conn.getRemoteSocketAddress() + ": " + message);
         Map<String, Object> msg = gson.fromJson(message, new TypeToken<Map<String, Object>>(){}.getType());
         String type = (String) msg.get("type");
         if ("join".equals(type)) {
             if (connectionToPlayerId.containsKey(conn)) {
-                System.out.println("Duplicate join message ignored for connection: " + conn.getRemoteSocketAddress());
                 return;
             }
             String playerName = (String) msg.get("playerName");
@@ -103,7 +101,6 @@ public class WebGameServer extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println("Connection closed: " + conn.getRemoteSocketAddress());
         Integer playerId = connectionToPlayerId.get(conn);
         if (playerId != null) {
             System.out.println("Player disconnected: id=" + playerId + ", name=" + playerNames.get(playerId));
