@@ -17,6 +17,9 @@ RUN apt-get update && \
 # Make virtual environment available in PATH
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Set the Java server port (separate from the public PORT variable)
+ENV JAVA_SERVER_PORT=8887
+
 # Set working directory
 WORKDIR /app
 
@@ -31,14 +34,26 @@ COPY games/assets/ /app/assets/
 RUN printf '#!/bin/bash\n\
 set -e\n\
 echo "🚀 Starting Combined Drop Game Server"\n\
-echo "Port: ${PORT:-10000}"\n\
-echo "Starting Java server on port 8887..."\n\
+PUBLIC_PORT="${PORT:-10000}"\n\
+JAVA_PORT="8887"\n\
+echo "Public port: $PUBLIC_PORT"\n\
+echo "Java server port: $JAVA_PORT"\n\
+echo "Starting Java server on port $JAVA_PORT..."\n\
+# Temporarily unset PORT so Java server uses default 8887\n\
+unset PORT\n\
 java -jar /app/drop-server.jar &\n\
 JAVA_PID=$!\n\
+# Restore PORT for websockify\n\
+export PORT="$PUBLIC_PORT"\n\
 echo "Java server PID: $JAVA_PID"\n\
 sleep 5\n\
-echo "Starting websockify proxy..."\n\
-exec websockify --web=./ --verbose "${PORT:-10000}" localhost:8887\n' > /app/start.sh && \
+if ! kill -0 $JAVA_PID 2>/dev/null; then\n\
+    echo "❌ Java server failed to start"\n\
+    exit 1\n\
+fi\n\
+echo "✅ Java server started successfully on port $JAVA_PORT"\n\
+echo "Starting websockify proxy on port $PUBLIC_PORT -> localhost:$JAVA_PORT..."\n\
+exec websockify --web=./ --verbose "$PUBLIC_PORT" "localhost:$JAVA_PORT"\n' > /app/start.sh && \
 chmod +x /app/start.sh
 
 # Expose port for Render

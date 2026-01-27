@@ -185,8 +185,9 @@ public class WebGameServer extends WebSocketServer {
 
     public static void main(String[] args) {
         String host = "0.0.0.0";
-        // Use the PORT environment variable if set, otherwise default to 8887 for local development
-        String portEnv = System.getenv("PORT");
+        // Use JAVA_SERVER_PORT environment variable if set, otherwise default to 8887
+        // DO NOT use PORT (that's for the public-facing websockify proxy)
+        String portEnv = System.getenv("JAVA_SERVER_PORT");
         int port = portEnv != null ? Integer.parseInt(portEnv) : 8887;
         WebGameServer server = new WebGameServer(port);
         server.start();
