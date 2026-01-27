@@ -25,12 +25,13 @@
     let myId;
 
     document.getElementById('joinBtn').onclick = function() {
-      // For Render.com deployment, connect to the main domain (websockify will proxy)
+      // Connect directly to the Java WebSocket server (no websockify proxy)
+      // The Java server is running on the main domain port
       const wsUrl = window.location.protocol === 'https:' ?
         'wss://' + window.location.host :
         'ws://' + window.location.hostname + (window.location.hostname === 'localhost' ? ':10000' : '');
 
-      console.log('Attempting to connect to WebSocket:', wsUrl);
+      console.log('Connecting directly to Java WebSocket server:', wsUrl);
       console.log('Current location:', window.location);
 
       try {
