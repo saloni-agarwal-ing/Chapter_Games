@@ -4,18 +4,13 @@ FROM eclipse-temurin:8-jre
 # Switch to root to install packages
 USER root
 
-# Install Python and websockify using virtual environment to avoid externally-managed-environment issues
+# Install Python and websockify for proper WebSocket proxying
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
-    python3-venv \
     && rm -rf /var/lib/apt/lists/* \
-    && python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install websockify
-
-# Make virtual environment available in PATH
-ENV PATH="/opt/venv/bin:$PATH"
+    && pip3 install websockify
 
 # Set the Java server port (separate from the public PORT variable)
 ENV JAVA_SERVER_PORT=8887
@@ -31,43 +26,44 @@ COPY games/webclient.html /app/index.html
 COPY games/websocket-test.html /app/test.html
 COPY games/assets/ /app/assets/
 
-# Create a simple startup script directly in the Dockerfile
+# Create websockify startup script with correct WebSocket->TCP bridging
 RUN printf '#!/bin/bash\n\
 set -e\n\
-echo "🚀 Starting Combined Drop Game Server"\n\
+echo "🚀 Starting Drop Game with WebSocket Bridge"\n\
 PUBLIC_PORT="${PORT:-10000}"\n\
 JAVA_PORT="8887"\n\
-echo "Public port: $PUBLIC_PORT"\n\
-echo "Java server port: $JAVA_PORT"\n\
-echo "Environment variables:"\n\
-env | grep -E "(PORT|JAVA)"\n\
-echo "Starting Java server on port $JAVA_PORT..."\n\
-# Completely clear the PORT variable to prevent Java server from using it\n\
-OLD_PORT="$PORT"\n\
-unset PORT\n\
-# Explicitly set JAVA_SERVER_PORT\n\
-export JAVA_SERVER_PORT=8887\n\
+echo "Public port: $PUBLIC_PORT (websockify proxy)"\n\
+echo "Java server port: $JAVA_PORT (internal)"\n\
+\n\
+# Start Java WebSocket server on internal port\n\
+echo "Starting Java WebSocket server on port $JAVA_PORT..."\n\
+export JAVA_SERVER_PORT="$JAVA_PORT"\n\
 java -jar /app/drop-server.jar &\n\
 JAVA_PID=$!\n\
-# Restore PORT for websockify\n\
-export PORT="$OLD_PORT"\n\
+\n\
 echo "Java server PID: $JAVA_PID"\n\
 echo "Waiting for Java server to start..."\n\
 sleep 5\n\
+\n\
 if ! kill -0 $JAVA_PID 2>/dev/null; then\n\
     echo "❌ Java server failed to start"\n\
-    echo "Checking for Java process:"\n\
-    ps aux | grep java || true\n\
-    echo "Checking port usage:"\n\
-    netstat -tlnp | grep 8887 || true\n\
     exit 1\n\
 fi\n\
-echo "✅ Java server started successfully on port $JAVA_PORT"\n\
+\n\
+echo "✅ Java WebSocket server started on port $JAVA_PORT"\n\
+echo "Starting websockify to bridge WebSocket connections..."\n\
+\n\
+echo "Starting websockify proxy..."\n\
+echo "Command: websockify --web=/app --verbose $PUBLIC_PORT localhost:$JAVA_PORT"\n\
+echo "This will proxy WebSocket connections from :$PUBLIC_PORT to localhost:$JAVA_PORT"\n\
+echo "Static files served from: /app/"\n\
+\n\
+# Test if Java server is responding\n\
 echo "Testing Java server connection..."\n\
-sleep 2\n\
-echo "Starting websockify proxy on port $PUBLIC_PORT -> localhost:$JAVA_PORT..."\n\
-echo "Websockify command: websockify --web=./ --verbose $PUBLIC_PORT localhost:$JAVA_PORT"\n\
-exec websockify --web=./ --verbose "$PUBLIC_PORT" "localhost:$JAVA_PORT"\n' > /app/start.sh && \
+timeout 3 bash -c "</dev/tcp/localhost/$JAVA_PORT" 2>/dev/null && echo "Java server port $JAVA_PORT is open" || echo "Java server port $JAVA_PORT is not responding"\n\
+\n\
+# Use websockify to proxy WebSocket connections\n\
+exec websockify --web=/app --verbose "$PUBLIC_PORT" "localhost:$JAVA_PORT"\n' > /app/start.sh && \
 chmod +x /app/start.sh
 
 # Expose port for Render

@@ -25,8 +25,7 @@
     let myId;
 
     document.getElementById('joinBtn').onclick = function() {
-      // For Render.com deployment, use the secure WebSocket protocol (wss://) on default port
-      // Render automatically maps external port 443 to your internal PORT environment variable
+      // For Render.com deployment, connect to the main domain (websockify will proxy)
       const wsUrl = window.location.protocol === 'https:' ?
         'wss://' + window.location.host :
         'ws://' + window.location.hostname + (window.location.hostname === 'localhost' ? ':10000' : '');
