@@ -4,10 +4,11 @@ FROM eclipse-temurin:8-jre
 # Switch to root to install packages
 USER root
 
-# Install nginx for proper reverse proxying
+# Install nginx and python for proper reverse proxying and static file serving
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     nginx \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the Java server port (separate from the public PORT variable)
@@ -34,40 +35,47 @@ http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
 
-    # Map for connection upgrade
-    map $http_upgrade $connection_upgrade {
-        default upgrade;
-        '' close;
+    # Map to determine if request should be proxied based on upgrade header
+    map $http_upgrade $proxy_connection {
+        default "";
+        websocket "upgrade";
+    }
+
+    # Map to determine upstream based on upgrade header
+    map $http_upgrade $backend {
+        default "static";
+        websocket "java_server";
     }
 
     upstream java_server {
         server localhost:8887;
     }
 
+    upstream static {
+        server 127.0.0.1:8888;
+    }
+
+    # Static file server
     server {
-        listen %%PORT%%;
-        server_name _;
+        listen 8888;
         root /app;
         index index.html;
 
-        # Handle static files first
-        location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg|txt|json|atlas|fnt)$ {
-            root /app;
-            expires 1h;
-            add_header Cache-Control "public";
-        }
-
-        # Handle root requests (serve index.html)
-        location = / {
-            try_files /index.html =404;
-        }
-
-        # Handle all other requests - assume they are WebSocket connections
         location / {
-            proxy_pass http://java_server;
+            try_files $uri $uri/ /index.html;
+        }
+    }
+
+    # Main server that routes based on upgrade header
+    server {
+        listen %%PORT%%;
+        server_name _;
+
+        location / {
+            proxy_pass http://$backend;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Connection $proxy_connection;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -138,6 +146,20 @@ netstat -tlnp | grep $JAVA_PID || echo "Java process not found in netstat"
 
 # Restore PORT variable for nginx
 export PORT="$PUBLIC_PORT"
+
+# Start static file server on port 8888 for nginx upstream
+echo "Starting static file server on port 8888..."
+cd /app && python3 -m http.server 8888 &
+STATIC_PID=$!
+echo "Static file server PID: $STATIC_PID"
+
+# Wait for static server to start
+sleep 2
+if ! kill -0 $STATIC_PID 2>/dev/null; then
+    echo "❌ Static file server failed to start"
+    exit 1
+fi
+echo "✅ Static file server started on port 8888"
 
 # Test nginx config before starting
 echo "Testing nginx configuration..."
