@@ -1,16 +1,21 @@
-# BULLETPROOF Dockerfile - Uses only proven, stable base images
-FROM openjdk:8-jre-slim
+# BULLETPROOF Dockerfile - Uses current stable base images
+FROM eclipse-temurin:8-jre
 
 # Switch to root to install packages
 USER root
 
-# Update package lists and install Python + pip in one clean step
+# Install Python and websockify using virtual environment to avoid externally-managed-environment issues
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/* \
-    && python3 -m pip install --no-cache-dir websockify
+    && python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install websockify
+
+# Make virtual environment available in PATH
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
