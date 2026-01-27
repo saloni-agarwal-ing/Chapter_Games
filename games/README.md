@@ -188,46 +188,121 @@ If your client needs to specify server IP or player name via command-line or env
    - Windows: `git config --global credential.helper wincred`
    - Linux: `git config --global credential.helper cache`
 
----
-
-## 11. Deploying the Drop Game Server on Railway (No Card Required)
-
-1. Sign up at [Railway](https://railway.app/) with your GitHub account.
-2. Click “New Project” and select “Deploy from GitHub repo”.
-3. Connect your GitHub repository (created above).
-4. Railway will detect your Dockerfile. If needed, set the start command (e.g., `java -jar /app/core-1.0.0.jar`).
-5. Set the port to `8887` in Railway’s service settings.
-6. Click “Deploy” and wait for the build to finish.
-7. Railway will provide a public domain and port (e.g., `your-app.up.railway.app:12345`).
-8. Share this address and port with your players. Clients should use this address to connect.
 
 ---
 
-## How to Remove git from the Project
 
-If you want to completely remove git tracking and history from this project:
+# Connectivity Test (Cloud Deployment)
 
-1. Open a terminal in your project directory.
-2. Run:
-   ```
-   rm -rf .git
-   ```
-   This deletes all git history and configuration.
-3. Optionally, remove `.gitignore` and `.gitattributes` files:
-   ```
-   rm -f .gitignore .gitattributes
-   ```
-4. To verify removal, run:
-   ```
-   git status
-   ```
-   You should see: `fatal: not a git repository (or any of the parent directories): .git`
+To test HTTPS connectivity to your deployed service:
+```
+nc -vz chapter-games-websockify.onrender.com 443
+```
 
-You can re-initialize git later with `git init` if needed.
+To test WebSocket connectivity (proxy):
+```
+nc -vz chapter-games-websockify.onrender.com 10000
+```
+
+If port 10000 times out:
+- Check Render service settings to ensure port 10000 is exposed.
+- Verify the websockify process is running and listening on port 10000.
+- Check for firewall or network restrictions on Render or your client.
+- See Render docs: https://render.com/docs/networking#ports
+
+You can also test HTTPS with:
+```
+curl -v https://chapter-games-websockify.onrender.com
+```
+
+Update your client connection string:
+```
+./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=wss://chapter-games-websockify.onrender.com
+```
+Or, if specifying the port:
+```
+./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=wss://chapter-games-websockify.onrender.com:10000
+```
+
+If you are running the client in Docker:
+```
+docker run --env GAME_SERVER_URI=wss://chapter-games-websockify.onrender.com:10000 --env PLAYER_NAME=Erish yu69yj/drop-client:latest
+```
 
 
-nc -vz chapter-games-new.onrender.com 443
-curl -v https://chapter-games-new.onrender.com
-./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=wss://chapter-games-new.onrender.com
-./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=ws://chapter-games-new.onrender.com:8887
-docker run --env GAME_SERVER_URI=ws://chapter-games-new.onrender.com:8887 --env PLAYER_NAME=Erish yu69yj/drop-client:latest
+
+1) To run the server and client locally , run the below commands
+   ./gradlew :core:run --args='io.github.Games.Drop.WebGameServer'
+   ./gradlew :lwjgl3:run -PplayerName=Erish
+
+2) I tried to build and deploy the image of server and client on docker , so that other players can also run the client on their local machine and we can play mutiple player game .
+   a- the server runs fine on docker - can see message on docker WebGameServer started on port 8887
+   b- the client on my local machine also works fine.
+   c- But it was not possible for another person to pull the client image locally in their machine. It gave firewall network/infra/access related error since within ING network it is restricted.
+
+
+3) I pushed my repo in the github so that i can deploy my repo on public cloud.
+   a- Repo is available on github - https://github.com/saloni-agarwal-ing/Chapter_Games
+   b- Then i used render.com for public cloud -  https://dashboard.render.com/project/prj-d4s36o24d50c73b7k920
+   c- Used websocket to build the image on cloud so that other players can access it via browser.
+      *   You want to expose a TCP service (e.g., a game server) to browsers via WebSockets.
+      *   You deploy this container to a platform (like Render.com) that only exposes certain ports (usually 80/443).
+      * The container listens on the platform’s assigned port and proxies WebSocket traffic to your backend service.
+      d- the application is deployed successfully on public - https://dashboard.render.com/web/srv-d4td5a2li9vc73alhrs0
+      e- nc -vz chapter-games-websockify.onrender.com 443 - shows succeeded "Connection to chapter-games-websockify.onrender.com port 443 [tcp/https] succeeded!"
+      f- nc -vz chapter-games-websockify.onrender.com 10000 - shows timeout "nc: connect to chapter-games-websockify.onrender.com port 10000 (tcp) timed out: Operation now in progress"
+      
+## ✅ FIX FOR RENDER.COM PORT 10000 TIMEOUT
+
+**Problem**: Render.com only exposes ports 80 (HTTP) and 443 (HTTPS) to the public internet. Port 10000 is not accessible externally.
+
+**Solution**: Use the combined Docker approach or connect through standard HTTPS (port 443).
+
+### Option 1: Deploy Combined Container (Recommended)
+
+1. **Update your Render service** to use the combined Dockerfile:
+   - In your Render dashboard, go to your service settings
+   - Change the Dockerfile path to: `Dockerfile.combined`
+   - Redeploy the service
+
+2. **Test the connection** (should work now):
+   ```bash
+   # Test HTTPS connectivity (this should work)
+   curl -v https://chapter-games-websockify.onrender.com
+   
+   # Test with browser
+   # Open: https://chapter-games-websockify.onrender.com
+   ```
+
+3. **Connect desktop client**:
+   ```bash
+   # Use WSS (secure WebSocket) without specifying port
+   ./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=wss://chapter-games-websockify.onrender.com
+   ```
+
+### Option 2: Fix Your Current Deployment
+
+If you want to keep your current setup, ensure your websockify service uses Render's PORT environment variable:
+
+1. **Verify your start-websockify.sh** uses `$PORT` (already fixed in the repository)
+2. **Connect using HTTPS** instead of specifying port 10000:
+   - ✅ Correct: `wss://chapter-games-websockify.onrender.com`  
+   - ❌ Wrong: `wss://chapter-games-websockify.onrender.com:10000`
+
+### Testing Commands That Should Work:
+
+```bash
+# Test basic connectivity (should succeed)
+nc -vz chapter-games-websockify.onrender.com 443
+
+# Test HTTPS (should return HTML or websockify page)
+curl -v https://chapter-games-websockify.onrender.com
+
+# Connect desktop client (use this format)
+./gradlew :lwjgl3:run -PplayerName=Erish -DgameServerUri=wss://chapter-games-websockify.onrender.com
+
+# Docker client connection
+docker run --env GAME_SERVER_URI=wss://chapter-games-websockify.onrender.com --env PLAYER_NAME=Erish yu69yj/drop-client:latest
+```
+
+**Key Point**: Never specify port numbers when connecting to Render.com services. Use the bare domain name and let Render handle the port routing automatically.

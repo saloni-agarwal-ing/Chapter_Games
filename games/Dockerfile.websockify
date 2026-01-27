@@ -1,9 +1,18 @@
 # Dockerfile for websockify proxy
 FROM python:3.11-slim
 WORKDIR /app
-RUN pip install websockify
-# Entrypoint script will use $PORT and $TARGET_HOST:$TARGET_PORT
-COPY games/start-websockify.sh /app/start-websockify.sh
+
+# Install websockify and curl for health checks
+RUN pip install websockify && apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy entrypoint script
+COPY start-websockify.sh /app/start-websockify.sh
 RUN chmod +x /app/start-websockify.sh
+
+# Copy web client files to serve
+COPY webclient.html /app/index.html
+COPY assets/ /app/assets/
+
+EXPOSE 10000
 CMD ["/app/start-websockify.sh"]
 

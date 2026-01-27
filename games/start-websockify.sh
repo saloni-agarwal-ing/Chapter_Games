@@ -4,7 +4,7 @@
 
 set -e
 
-# Use Render.com provided PORT or default to 10000
+# Use Render.com provided PORT (this will be 443 or 80) or default to 10000 for local
 PUBLIC_PORT="${PORT:-10000}"
 # Target host and port (Java server)
 TARGET_HOST="${TARGET_HOST:-localhost}"

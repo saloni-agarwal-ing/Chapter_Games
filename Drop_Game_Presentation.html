@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drop Game - Multiplayer WebSocket Implementation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .slide {
+            background: white;
+            margin: 20px auto;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 1000px;
+            min-height: 500px;
+            page-break-after: always;
+        }
+        .slide h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 2.2em;
+        }
+        .slide h2 {
+            color: #34495e;
+            margin-top: 30px;
+            font-size: 1.8em;
+        }
+        .slide h3 {
+            color: #7f8c8d;
+            font-size: 1.4em;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .architecture-diagram {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: monospace;
+            text-align: center;
+            margin: 20px 0;
+            border: 2px solid #dee2e6;
+        }
+        ul {
+            margin: 15px 0;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 5px solid #ffc107;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-left: 5px solid #28a745;
+            margin: 20px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-left: 5px solid #17a2b8;
+            margin: 20px 0;
+        }
+        @media print {
+            body { background: white; }
+            .slide {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-after: always;
+                margin: 0;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="slide">
+    <h1>Drop Game - Multiplayer WebSocket Implementation</h1>
+    <h2>Project Overview & Architecture</h2>
+    <div class="info">
+        <h3>What is Drop Game?</h3>
+        <ul>
+            <li>A multiplayer arcade-style game built with LibGDX</li>
+            <li>Players control buckets to catch falling drops</li>
+            <li>Real-time multiplayer gameplay using WebSocket communication</li>
+            <li>Cross-platform deployment (Desktop, Docker, Cloud)</li>
+        </ul>
+
+        <h3>Key Features:</h3>
+        <ul>
+            <li>Real-time synchronization between players</li>
+            <li>WebSocket-based networking</li>
+            <li>Docker containerization</li>
+            <li>Cloud deployment with websockify proxy</li>
+            <li>Player scoring and leaderboard</li>
+        </ul>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>Game Architecture Overview</h1>
+    <div class="architecture-diagram">
+        <pre>
+┌─────────────────┐    WebSocket     ┌─────────────────┐
+│   Game Client   │ ←──────────────→ │   Game Server   │
+│   (LibGDX)      │    ws://host:8887│  (WebSocket)    │
+└─────────────────┘                  └─────────────────┘
+        │                                     │
+        │                                     │
+   ┌────▼────┐                          ┌────▼────┐
+   │ Player  │                          │ Game    │
+   │ Input   │                          │ Logic   │
+   │Handler  │                          │ Engine  │
+   └─────────┘                          └─────────┘
+        </pre>
+    </div>
+
+    <h3>Components:</h3>
+    <ul>
+        <li><strong>Client (Main.java)</strong>: LibGDX game rendering and input handling</li>
+        <li><strong>Server (WebGameServer.java)</strong>: Game state management and WebSocket communication</li>
+        <li><strong>WebSocket Protocol</strong>: Real-time bidirectional communication</li>
+        <li><strong>Docker Containers</strong>: Deployment and scaling</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h1>Game Mechanics - How Drop Game Works</h1>
+
+    <h2>Core Gameplay Loop:</h2>
+
+    <div class="highlight">
+        <h3>1. Drop Spawning</h3>
+        <ul>
+            <li>Server spawns drops at random X positions every second</li>
+            <li>Drops fall from top (Y=5) to bottom (Y=0) at constant speed</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>2. Player Movement</h3>
+        <ul>
+            <li>Players control bucket position using keyboard (left/right) or mouse</li>
+            <li>Bucket position constrained within world boundaries (0 to 8 units)</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>3. Collision Detection</h3>
+        <ul>
+            <li>Server checks if falling drops intersect with player buckets</li>
+            <li>When collision detected: player score increases, drop disappears</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>4. Game State Synchronization</h3>
+        <ul>
+            <li>Server broadcasts game state to all clients 20 times per second</li>
+            <li>Includes: player positions, scores, active drops, world dimensions</li>
+        </ul>
+    </div>
+
+    <div class="info">
+        <h3>Game World:</h3>
+        <ul>
+            <li>World Size: 8 × 5 units</li>
+            <li>Bucket Size: 1 × 1 units</li>
+            <li>Drop Size: 0.7 × 0.7 units</li>
+            <li>Drop Speed: 2.5 units/second</li>
+        </ul>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>WebSocket Implementation - Client Side</h1>
+
+    <h2>Client Connection (Main.java)</h2>
+
+    <pre><code>// WebSocket connection setup
+URI uri = new URI("ws://localhost:8887");
+wsClient = new WebSocketClient(uri) {
+    @Override
+    public void onOpen(ServerHandshake handshake) {
+        // Send join message with player name
+        Map&lt;String, Object&gt; join = new HashMap&lt;&gt;();
+        join.put("type", "join");
+        join.put("playerName", myName);
+        wsClient.send(gson.toJson(join));
+    }
+
+    @Override
+    public void onMessage(String message) {
+        // Parse game state updates from server
+        handleGameStateUpdate(message);
+    }
+};</code></pre>
+
+    <h3>Message Types Sent by Client:</h3>
+    <ul>
+        <li><code>join</code>: Initial connection with player name</li>
+        <li><code>move</code>: Keyboard-based movement (left/right)</li>
+        <li><code>moveTo</code>: Mouse-based absolute positioning</li>
+    </ul>
+
+    <h3>Message Processing:</h3>
+    <ul>
+        <li>Receives <code>welcome</code> message with assigned player ID</li>
+        <li>Processes <code>gameState</code> updates containing all game data</li>
+        <li>Updates local game state for rendering</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h1>WebSocket Implementation - Server Side</h1>
+
+    <h2>Server Structure (WebGameServer.java)</h2>
+
+    <pre><code>public class WebGameServer extends WebSocketServer {
+    private Map&lt;Integer, WebSocket&gt; clients = new HashMap&lt;&gt;();
+    private Map&lt;Integer, Integer&gt; scoreboard = new HashMap&lt;&gt;();
+    private Map&lt;Integer, String&gt; playerNames = new HashMap&lt;&gt;();
+    private List&lt;Map&lt;String, Float&gt;&gt; drops = new ArrayList&lt;&gt;();
+
+    // Game loop running at 20 FPS
+    timer.scheduleAtFixedRate(() -&gt; updateGameLogic(), 0, 50);
+}</code></pre>
+
+    <h2>Key Server Functions:</h2>
+
+    <div class="highlight">
+        <h3>1. Connection Management</h3>
+        <ul>
+            <li>Assigns unique player IDs</li>
+            <li>Tracks player connections and names</li>
+            <li>Handles disconnections gracefully</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>2. Game Logic Processing</h3>
+        <ul>
+            <li>Updates drop positions (physics simulation)</li>
+            <li>Collision detection between drops and buckets</li>
+            <li>Score calculation and tracking</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>3. State Broadcasting</h3>
+        <ul>
+            <li>Sends complete game state to all connected clients</li>
+            <li>Ensures synchronization across all players</li>
+        </ul>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>WebSocket Message Protocol</h1>
+
+    <h2>Message Structure (JSON Format)</h2>
+
+    <div class="highlight">
+        <h3>Client → Server Messages:</h3>
+        <pre><code>// Join game
+{"type": "join", "playerName": "PlayerName"}
+
+// Move bucket
+{"type": "move", "direction": "left|right"}
+{"type": "moveTo", "x": 3.5}</code></pre>
+    </div>
+
+    <div class="info">
+        <h3>Server → Client Messages:</h3>
+        <pre><code>// Welcome with player ID
+{"type": "welcome", "playerId": 1}
+
+// Complete game state
+{
+  "type": "gameState",
+  "scoreboard": {"1": 5, "2": 3},
+  "playerNames": {"1": "Alice", "2": "Bob"},
+  "bucketPositions": {"1": 2.5, "2": 4.0},
+  "drops": [{"x": 1.5, "y": 3.2}],
+  "playerColors": {"1": "#FF5733", "2": "#33FF57"}
+}</code></pre>
+    </div>
+
+    <h2>Communication Pattern:</h2>
+    <ul>
+        <li>Client sends input events to server</li>
+        <li>Server processes all game logic centrally</li>
+        <li>Server broadcasts authoritative game state to all clients</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h1>Docker Containerization Strategy</h1>
+
+    <h2>Three-Container Architecture:</h2>
+
+    <div class="highlight">
+        <h3>1. Game Server Container (Dockerfile)</h3>
+        <pre><code>FROM eclipse-temurin:8-jre
+COPY core/build/libs/drop-server-1.0.0-all.jar /app/
+EXPOSE 8887
+CMD ["java", "-cp", "drop-server.jar", "io.github.Games.Drop.WebGameServer"]</code></pre>
+    </div>
+
+    <div class="highlight">
+        <h3>2. Game Client Container (Dockerfile.client)</h3>
+        <pre><code>FROM eclipse-temurin:8-jre
+COPY lwjgl3/build/libs/Games-1.0.0.jar /app/
+COPY assets /app/assets
+ENV GAME_SERVER_URI=wss://chapter-games-new.onrender.com
+CMD ["java", "-jar", "Games-1.0.0.jar"]</code></pre>
+    </div>
+
+    <div class="highlight">
+        <h3>3. WebSockify Proxy Container - Purpose :Acts as a proxy between web browsers (which use WebSockets) and your Java game server (which uses TCP sockets). (Dockerfile.websockify)</h3>
+        <pre><code>FROM python:3.11-slim
+RUN pip install websockify
+# Proxies WebSocket traffic for cloud deployment
+CMD ["websockify", "10000", "localhost:8887"]</code></pre>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>Deployment Architecture</h1>
+
+    <div class="architecture-diagram">
+        <h3>Local Development:</h3>
+        <pre>Client ←→ WebSocket (ws://localhost:8887) ←→ Server</pre>
+
+        <h3>Docker Local Network:</h3>
+        <pre>Client Container ←→ Server Container
+    ↓                     ↓
+Network Bridge (docker)</pre>
+
+        <h3>Cloud Deployment (Render.com):</h3>
+        <pre>Browser/Client ←→ HTTPS/WSS ←→ Websockify Proxy ←→ Game Server
+    (Port 443)              (Port 10000)        (Port 8887)</pre>
+    </div>
+
+    <div class="info">
+        <h3>Why Websockify Proxy?</h3>
+        <ul>
+            <li>Cloud platforms typically only expose HTTP/HTTPS ports (80/443)</li>
+            <li>Websockify translates WebSocket traffic to TCP for internal communication</li>
+            <li>Enables browser-based clients to connect to TCP-based game servers</li>
+            <li>Provides SSL termination for secure WebSocket connections (WSS)</li>
+        </ul>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>Challenges & Solutions</h1>
+
+    <div class="highlight">
+        <h3>Challenge 1: Network Firewall Issues</h3>
+        <ul>
+            <li><strong>Problem</strong>: Corporate networks block non-HTTP traffic</li>
+            <li><strong>Solution</strong>: Websockify proxy converts WebSocket to HTTPS</li>
+            <li><strong>Implementation</strong>: Deploy proxy container on cloud platform</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>Challenge 2: Real-time Synchronization</h3>
+        <ul>
+            <li><strong>Problem</strong>: Multiple clients need consistent game state</li>
+            <li><strong>Solution</strong>: Server-authoritative architecture</li>
+            <li><strong>Implementation</strong>: Server processes all logic, broadcasts state</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>Challenge 3: Cross-platform Deployment</h3>
+        <ul>
+            <li><strong>Problem</strong>: Different environments (local, Docker, cloud)</li>
+            <li><strong>Solution</strong>: Environment-based configuration</li>
+            <li><strong>Implementation</strong>: System properties and environment variables</li>
+        </ul>
+    </div>
+
+    <pre><code>// Flexible server URI configuration
+String uri = System.getProperty("gameServerUri");
+if (uri == null) uri = System.getenv("GAME_SERVER_URI");
+if (uri == null) uri = "ws://localhost:8887"; // default</code></pre>
+</div>
+
+<div class="slide">
+    <h1>Running the Application</h1>
+
+    <div class="highlight">
+        <h3>Local Development:</h3>
+        <pre><code># Terminal 1: Start the server
+./gradlew :core:run --args='io.github.Games.Drop.WebGameServer'
+
+# Terminal 2: Start client
+./gradlew :lwjgl3:run -PplayerName=Alice
+
+# Terminal 3: Start another client
+./gradlew :lwjgl3:run -PplayerName=Bob</code></pre>
+    </div>
+
+    <div class="info">
+        <h3>Docker Deployment:</h3>
+        <pre><code># Build images
+docker build -t drop-server -f Dockerfile .
+docker build -t drop-client -f Dockerfile.client .
+
+# Run server
+docker run -p 8887:8887 drop-server
+
+# Run clients (on different machines)
+docker run --env SERVER_IP=192.168.1.100 --env PLAYER_NAME=Alice drop-client</code></pre>
+    </div>
+
+    <div class="success">
+        <h3>Cloud Connection:</h3>
+        <pre><code>./gradlew :lwjgl3:run -PplayerName=Alice -DgameServerUri=wss://chapter-games-websockify.onrender.com</code></pre>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>Technical Highlights</h1>
+
+    <h2>Real-time Game Features:</h2>
+
+    <div class="highlight">
+        <h3>1. Smooth Movement</h3>
+        <ul>
+            <li>Client-side prediction for responsive controls</li>
+            <li>Server validation and correction</li>
+            <li>Support for both keyboard and mouse input</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>2. Visual Features</h3>
+        <ul>
+            <li>Each player assigned unique color</li>
+            <li>Real-time scoreboard display</li>
+            <li>Smooth drop physics animation</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h3>3. Scalable Architecture</h3>
+        <ul>
+            <li>WebSocket handles multiple concurrent players</li>
+            <li>Stateless server design (could be horizontally scaled)</li>
+            <li>Efficient JSON message protocol</li>
+        </ul>
+    </div>
+
+    <div class="info">
+        <h3>Performance Optimizations:</h3>
+        <ul>
+            <li>Fixed tick rate (20 FPS) for consistent gameplay</li>
+            <li>Batched state updates (not per-action)</li>
+            <li>Efficient collision detection (AABB)</li>
+            <li>Memory management for drop objects</li>
+        </ul>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>Conclusion</h1>
+
+    <div class="success">
+        <h2>Project Summary:</h2>
+        <ul>
+            <li>Successfully implemented multiplayer Drop game using LibGDX + WebSocket</li>
+            <li>Demonstrated real-time networking with authoritative server architecture</li>
+            <li>Achieved cross-platform deployment (local, Docker, cloud)</li>
+            <li>Learned containerization and cloud deployment strategies</li>
+        </ul>
+    </div>
+
+    <div class="info">
+        <h2>Key Technical Achievements:</h2>
+        <ul>
+            <li>✅ WebSocket communication protocol design</li>
+            <li>✅ Real-time game state synchronization</li>
+            <li>✅ Docker containerization strategy</li>
+            <li>✅ Cloud deployment with proxy configuration</li>
+            <li>✅ Multi-platform client support</li>
+        </ul>
+    </div>
+
+    <div class="highlight">
+        <h2>Lessons Learned:</h2>
+        <ul>
+            <li>WebSocket provides excellent foundation for real-time multiplayer games</li>
+            <li>Server-authoritative architecture prevents cheating and ensures consistency</li>
+            <li>Docker simplifies deployment across different environments</li>
+            <li>Cloud deployment requires careful networking configuration</li>
+            <li>LibGDX offers powerful cross-platform game development capabilities</li>
+        </ul>
+    </div>
+</div>
+
+<div class="slide">
+    <h1>Thank You!</h1>
+    <h2>Questions & Discussion</h2>
+
+    <div class="info">
+        <p><strong>Repository</strong>: https://github.com/saloni-agarwal-ing/Chapter_Games</p>
+        <p><strong>Live Demo</strong>: https://chapter-games-websockify.onrender.com</p>
+    </div>
+
+    <h3>Technologies Used:</h3>
+    <ul>
+        <li>Java 8 + LibGDX</li>
+        <li>WebSocket (Java-WebSocket library)</li>
+        <li>Docker & Docker Hub</li>
+        <li>Render.com Cloud Platform</li>
+        <li>Websockify Proxy</li>
+        <li>Gradle Build System</li>
+    </ul>
+
+    <div class="success">
+        <h3>Next Steps:</h3>
+        <ul>
+            <li>Resolve Render.com WebSocket proxy configuration</li>
+            <li>Implement web-based client for broader accessibility</li>
+            <li>Add more engaging gameplay mechanics</li>
+            <li>Scale for larger player counts</li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>
