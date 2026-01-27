@@ -2,10 +2,10 @@
 # Runs both Java WebSocket server and websockify proxy in one container
 
 # Use a multi-stage build to build the JAR
-FROM openjdk:8-jdk-alpine AS builder
+FROM eclipse-temurin:8-jdk AS builder
 
 # Install dependencies for building
-RUN apk add --no-cache bash
+RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
 
 # Copy source code
 WORKDIR /build
