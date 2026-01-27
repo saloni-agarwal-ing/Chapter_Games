@@ -23,6 +23,7 @@
   <script>
     let ws;
     let myId;
+
     document.getElementById('joinBtn').onclick = function() {
       // For Render.com deployment, use the secure WebSocket protocol (wss://) on default port
       // Render automatically maps external port 443 to your internal PORT environment variable
@@ -30,27 +31,135 @@
         'wss://' + window.location.host :
         'ws://' + window.location.hostname + (window.location.hostname === 'localhost' ? ':10000' : '');
 
-      console.log('Connecting to WebSocket:', wsUrl);
-      ws = new WebSocket(wsUrl);
-      ws.onopen = function() {
-        ws.send(JSON.stringify({type: 'join', playerName: document.getElementById('playerName').value}));
-        document.getElementById('joinBtn').disabled = true;
-        document.getElementById('playerName').disabled = true;
-      };
-      ws.onmessage = function(event) {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'welcome') {
-          myId = msg.playerId;
-          document.getElementById('game').style.display = '';
-        } else if (msg.type === 'gameState') {
-          updateScoreboard(msg.scoreboard, msg.playerNames);
-        }
-      };
-      ws.onclose = function() {
-        alert('Disconnected from server');
-        location.reload();
-      };
+      console.log('Attempting to connect to WebSocket:', wsUrl);
+      console.log('Current location:', window.location);
+
+      try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = function() {
+          console.log('WebSocket connection opened successfully');
+          const joinMessage = {type: 'join', playerName: document.getElementById('playerName').value};
+          console.log('Sending join message:', joinMessage);
+          ws.send(JSON.stringify(joinMessage));
+          document.getElementById('joinBtn').disabled = true;
+          document.getElementById('playerName').disabled = true;
+        };
+
+        ws.onmessage = function(event) {
+          console.log('Received message:', event.data);
+          try {
+            const msg = JSON.parse(event.data);
+            console.log('Parsed message:', msg);
+            if (msg.type === 'welcome') {
+              myId = msg.playerId;
+              console.log('Welcome received, player ID:', myId);
+              document.getElementById('game').style.display = '';
+            } else if (msg.type === 'gameState') {
+              console.log('Game state received:', msg);
+              updateScoreboard(msg.scoreboard, msg.playerNames);
+            }
+          } catch (parseError) {
+            console.error('Error parsing message:', parseError, 'Raw message:', event.data);
+          }
+        };
+
+        ws.onerror = function(error) {
+          console.error('WebSocket error occurred:', error);
+          alert('Connection error: Unable to connect to game server. Please check your internet connection and try again.');
+        };
+
+        ws.onclose = function(event) {
+          console.log('WebSocket connection closed. Code:', event.code, 'Reason:', event.reason, 'Clean:', event.wasClean);
+          if (event.code === 1006) {
+            alert('Connection failed: Could not connect to game server. The server may be temporarily unavailable.');
+          } else if (event.code === 1011) {
+            alert('Server error: The game server encountered an internal error.');
+          } else if (event.code === 1000) {
+            console.log('Connection closed normally');
+          } else {
+            alert('Disconnected from server (Code: ' + event.code + '). Refreshing page...');
+          }
+
+          // Re-enable the join button
+          document.getElementById('joinBtn').disabled = false;
+          document.getElementById('playerName').disabled = false;
+          document.getElementById('game').style.display = 'none';
+          myId = null;
+        };
+
+      } catch (connectionError) {
+        console.error('Error creating WebSocket:', connectionError);
+        alert('Failed to create WebSocket connection: ' + connectionError.message);
+      }
     };
+
+    function checkServerStatus() {
+      const statusSpan = document.getElementById('server-status');
+      statusSpan.textContent = 'Checking...';
+
+      // Test basic HTTP connectivity first
+      fetch('/')
+        .then(response => {
+          console.log('HTTP status:', response.status, response.statusText);
+          if (response.ok) {
+            statusSpan.textContent = 'HTTP OK - Testing WebSocket...';
+            testWebSocketConnection();
+          } else {
+            statusSpan.textContent = `HTTP Error: ${response.status}`;
+          }
+        })
+        .catch(error => {
+          console.error('HTTP error:', error);
+          statusSpan.textContent = `HTTP Failed: ${error.message}`;
+        });
+    }
+
+    function testWebSocketConnection() {
+      const statusSpan = document.getElementById('server-status');
+      const wsUrl = window.location.protocol === 'https:' ?
+        'wss://' + window.location.host :
+        'ws://' + window.location.hostname + (window.location.hostname === 'localhost' ? ':10000' : '');
+
+      console.log('Testing WebSocket to:', wsUrl);
+
+      try {
+        const testWs = new WebSocket(wsUrl);
+
+        const timeout = setTimeout(() => {
+          testWs.close();
+          statusSpan.textContent = 'WebSocket timeout';
+        }, 5000);
+
+        testWs.onopen = function() {
+          clearTimeout(timeout);
+          console.log('WebSocket test: connection opened');
+          statusSpan.textContent = 'WebSocket OK';
+          testWs.close();
+        };
+
+        testWs.onerror = function(error) {
+          clearTimeout(timeout);
+          console.error('WebSocket test error:', error);
+          statusSpan.textContent = 'WebSocket Error';
+        };
+
+        testWs.onclose = function(event) {
+          clearTimeout(timeout);
+          console.log('WebSocket test closed:', event.code, event.reason);
+          if (statusSpan.textContent === 'Checking...' || statusSpan.textContent === 'HTTP OK - Testing WebSocket...') {
+            statusSpan.textContent = `WebSocket Failed (${event.code})`;
+          }
+        };
+
+      } catch (error) {
+        console.error('WebSocket creation failed:', error);
+        statusSpan.textContent = `WebSocket Creation Failed: ${error.message}`;
+      }
+    }
+
+    // Check server status on page load
+    window.addEventListener('load', checkServerStatus);
 
     function sendMove(direction) {
       if (ws && ws.readyState === WebSocket.OPEN) {

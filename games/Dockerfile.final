@@ -28,6 +28,7 @@ COPY games/core/build/libs/drop-server-1.0.0-all.jar /app/drop-server.jar
 
 # Copy web assets
 COPY games/webclient.html /app/index.html
+COPY games/websocket-test.html /app/test.html
 COPY games/assets/ /app/assets/
 
 # Create a simple startup script directly in the Dockerfile
@@ -38,21 +39,34 @@ PUBLIC_PORT="${PORT:-10000}"\n\
 JAVA_PORT="8887"\n\
 echo "Public port: $PUBLIC_PORT"\n\
 echo "Java server port: $JAVA_PORT"\n\
+echo "Environment variables:"\n\
+env | grep -E "(PORT|JAVA)"\n\
 echo "Starting Java server on port $JAVA_PORT..."\n\
-# Temporarily unset PORT so Java server uses default 8887\n\
+# Completely clear the PORT variable to prevent Java server from using it\n\
+OLD_PORT="$PORT"\n\
 unset PORT\n\
+# Explicitly set JAVA_SERVER_PORT\n\
+export JAVA_SERVER_PORT=8887\n\
 java -jar /app/drop-server.jar &\n\
 JAVA_PID=$!\n\
 # Restore PORT for websockify\n\
-export PORT="$PUBLIC_PORT"\n\
+export PORT="$OLD_PORT"\n\
 echo "Java server PID: $JAVA_PID"\n\
+echo "Waiting for Java server to start..."\n\
 sleep 5\n\
 if ! kill -0 $JAVA_PID 2>/dev/null; then\n\
     echo "❌ Java server failed to start"\n\
+    echo "Checking for Java process:"\n\
+    ps aux | grep java || true\n\
+    echo "Checking port usage:"\n\
+    netstat -tlnp | grep 8887 || true\n\
     exit 1\n\
 fi\n\
 echo "✅ Java server started successfully on port $JAVA_PORT"\n\
+echo "Testing Java server connection..."\n\
+sleep 2\n\
 echo "Starting websockify proxy on port $PUBLIC_PORT -> localhost:$JAVA_PORT..."\n\
+echo "Websockify command: websockify --web=./ --verbose $PUBLIC_PORT localhost:$JAVA_PORT"\n\
 exec websockify --web=./ --verbose "$PUBLIC_PORT" "localhost:$JAVA_PORT"\n' > /app/start.sh && \
 chmod +x /app/start.sh
 
