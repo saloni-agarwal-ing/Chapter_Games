@@ -1,0 +1,14 @@
+# Render ignore file - specify files to exclude from deployment
+# Keep this minimal to ensure all necessary files are included
+
+# Exclude development files
+.idea/
+*.iml
+.DS_Store
+.gradle/
+*/build/classes/
+*/build/tmp/
+*/build/generated/
+
+# But include the built JAR file
+!games/core/build/libs/drop-server-1.0.0-all.jar
