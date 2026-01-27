@@ -37,7 +37,10 @@ echo "Java server port: $JAVA_PORT (internal)"\n\
 \n\
 # Start Java WebSocket server on internal port\n\
 echo "Starting Java WebSocket server on port $JAVA_PORT..."\n\
-export JAVA_SERVER_PORT="$JAVA_PORT"\n\
+# Clear ALL port-related environment variables to force Java server to use default 8887\n\
+unset PORT\n\
+unset JAVA_SERVER_PORT\n\
+# Start Java server - it will use default port 8887 since no PORT env var is set\n\
 java -jar /app/drop-server.jar &\n\
 JAVA_PID=$!\n\
 \n\
@@ -52,6 +55,9 @@ fi\n\
 \n\
 echo "✅ Java WebSocket server started on port $JAVA_PORT"\n\
 echo "Starting websockify to bridge WebSocket connections..."\n\
+\n\
+# Restore PORT variable for websockify\n\
+export PORT="$PUBLIC_PORT"\n\
 \n\
 echo "Starting websockify proxy..."\n\
 echo "Command: websockify --web=/app --verbose $PUBLIC_PORT localhost:$JAVA_PORT"\n\
