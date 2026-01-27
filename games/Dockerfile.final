@@ -34,38 +34,41 @@ http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
 
-    upstream websocket {
+    # Map for connection upgrade
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+
+    upstream java_server {
         server localhost:8887;
     }
 
     server {
         listen %%PORT%%;
         server_name _;
+        root /app;
+        index index.html;
 
-        # Handle WebSocket connections
+        # Primary location - handle both static files and WebSocket
         location / {
-            # Try to serve static files first
-            try_files $uri $uri/ @websocket;
-        }
+            # Check if this is a WebSocket upgrade request
+            if ($http_upgrade = "websocket") {
+                proxy_pass http://java_server;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_read_timeout 86400;
+                proxy_send_timeout 86400;
+                break;
+            }
 
-        # Static files location
-        location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg)$ {
-            root /app;
-            expires 1h;
-            add_header Cache-Control "public, immutable";
-        }
-
-        # WebSocket proxy fallback
-        location @websocket {
-            proxy_pass http://websocket;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_read_timeout 86400;
+            # Serve static files for non-WebSocket requests
+            try_files $uri $uri/ /index.html;
         }
     }
 }
@@ -87,26 +90,46 @@ sed "s/%%PORT%%/$PUBLIC_PORT/g" /etc/nginx/nginx.conf.template > /etc/nginx/ngin
 
 # Start Java WebSocket server
 echo "Starting Java WebSocket server on port $JAVA_PORT..."
-# Clear PORT variable completely to prevent Java server from using it
+# Clear ALL environment variables that might affect port selection
 unset PORT
-# Set the correct Java server port
-export JAVA_SERVER_PORT="$JAVA_PORT"
-echo "Java server environment: JAVA_SERVER_PORT=$JAVA_SERVER_PORT"
-java -jar /app/drop-server.jar &
+unset JAVA_SERVER_PORT
+unset SERVER_PORT
+
+echo "Environment check - PORT-related variables:"
+env | grep -i port || echo "No PORT variables found"
+
+# Try to pass port as system property to Java
+echo "Starting Java server with explicit port configuration..."
+java -Dport=$JAVA_PORT -DJAVA_SERVER_PORT=$JAVA_PORT -jar /app/drop-server.jar &
 JAVA_PID=$!
 
 echo "Java server PID: $JAVA_PID"
-sleep 8
+echo "Waiting for Java server to start (extended wait)..."
+sleep 10
 
+# Check if Java process is still running
 if ! kill -0 $JAVA_PID 2>/dev/null; then
-    echo "❌ Java server failed to start"
+    echo "❌ Java server process died"
+    echo "Checking for any Java processes:"
     ps aux | grep java || echo "No Java processes found"
+    echo "Checking system logs for errors:"
+    dmesg | tail -20 || echo "Cannot access system logs"
     exit 1
 fi
 
-echo "✅ Java WebSocket server started on port $JAVA_PORT"
-echo "Testing Java server connection..."
-timeout 3 bash -c "</dev/tcp/localhost/$JAVA_PORT" 2>/dev/null && echo "✅ Java server is responding" || echo "⚠️ Java server connection test failed"
+echo "✅ Java server process is running (PID: $JAVA_PID)"
+
+# More comprehensive port testing
+echo "Testing Java server connectivity..."
+echo "Checking if port $JAVA_PORT is open:"
+netstat -tlnp | grep ":$JAVA_PORT " || echo "Port $JAVA_PORT not found in netstat"
+
+echo "Attempting TCP connection test..."
+timeout 5 bash -c "exec 3<>/dev/tcp/localhost/$JAVA_PORT && echo 'Connection successful' || echo 'Connection failed'" 2>/dev/null || echo "TCP connection test failed"
+
+# Check what port the Java server actually bound to
+echo "Checking which ports Java process is listening on:"
+netstat -tlnp | grep $JAVA_PID || echo "Java process not found in netstat"
 
 # Restore PORT variable for nginx
 export PORT="$PUBLIC_PORT"
