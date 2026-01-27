@@ -1,0 +1,29 @@
+# Minimal working Dockerfile for Render.com - only essential packages
+FROM eclipse-temurin:8-jdk AS builder
+
+# Copy source and build
+WORKDIR /build
+COPY games/ /build/
+RUN chmod +x gradlew && ./gradlew :core:shadowJar --no-daemon
+
+# Runtime stage
+FROM eclipse-temurin:8-jre
+
+# Install only essential packages
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install websockify && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy files
+COPY --from=builder /build/core/build/libs/drop-server-1.0.0-all.jar /app/drop-server.jar
+COPY games/webclient.html /app/index.html
+COPY games/assets/ /app/assets/
+COPY games/start-combined.sh /app/start-combined.sh
+RUN chmod +x /app/start-combined.sh
+
+EXPOSE 10000
+CMD ["/app/start-combined.sh"]
