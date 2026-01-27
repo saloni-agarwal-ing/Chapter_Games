@@ -34,33 +34,38 @@ http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
 
-    # Map for WebSocket upgrade
-    map $http_upgrade $connection_upgrade {
-        default upgrade;
-        "" close;
+    upstream websocket {
+        server localhost:8887;
     }
 
     server {
         listen %%PORT%%;
         server_name _;
 
-        # Serve static files
+        # Handle WebSocket connections
         location / {
-            root /app;
-            index index.html;
-            try_files $uri $uri/ /index.html;
+            # Try to serve static files first
+            try_files $uri $uri/ @websocket;
+        }
 
-            # Handle WebSocket upgrade for the same location
-            if ($http_upgrade = websocket) {
-                proxy_pass http://localhost:8887;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection $connection_upgrade;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-            }
+        # Static files location
+        location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg)$ {
+            root /app;
+            expires 1h;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # WebSocket proxy fallback
+        location @websocket {
+            proxy_pass http://websocket;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 86400;
         }
     }
 }
@@ -82,7 +87,11 @@ sed "s/%%PORT%%/$PUBLIC_PORT/g" /etc/nginx/nginx.conf.template > /etc/nginx/ngin
 
 # Start Java WebSocket server
 echo "Starting Java WebSocket server on port $JAVA_PORT..."
+# Clear PORT variable completely to prevent Java server from using it
+unset PORT
+# Set the correct Java server port
 export JAVA_SERVER_PORT="$JAVA_PORT"
+echo "Java server environment: JAVA_SERVER_PORT=$JAVA_SERVER_PORT"
 java -jar /app/drop-server.jar &
 JAVA_PID=$!
 
@@ -98,6 +107,9 @@ fi
 echo "✅ Java WebSocket server started on port $JAVA_PORT"
 echo "Testing Java server connection..."
 timeout 3 bash -c "</dev/tcp/localhost/$JAVA_PORT" 2>/dev/null && echo "✅ Java server is responding" || echo "⚠️ Java server connection test failed"
+
+# Restore PORT variable for nginx
+export PORT="$PUBLIC_PORT"
 
 # Test nginx config before starting
 echo "Testing nginx configuration..."
