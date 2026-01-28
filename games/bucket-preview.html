@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bucket Visual Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    canvas {
+      border: 2px solid #333;
+      background: #87CEEB;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🪣 New Bucket Design Preview</h1>
+  <p>This shows what the new bucket shape looks like</p>
+
+  <canvas id="preview" width="400" height="300"></canvas>
+
+  <div>
+    <h3>Improvements:</h3>
+    <ul>
+      <li>✅ Bucket has trapezoid shape (wider at top, narrower at bottom)</li>
+      <li>✅ Bucket has a handle on top (curved arc)</li>
+      <li>✅ Much faster keyboard controls (continuous movement)</li>
+      <li>✅ Smoother gameplay - holds down arrow keys for fast movement</li>
+      <li>✅ Reduced console spam - cleaner logs</li>
+    </ul>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('preview');
+    const ctx = canvas.getContext('2d');
+
+    // Draw a sample bucket
+    const x = 150;
+    const y = 150;
+    const width = 100;
+    const height = 120;
+    const color = '#FF6B6B';
+
+    // Draw trapezoid body
+    const topWidth = width;
+    const bottomWidth = width * 0.7;
+    const widthDiff = (topWidth - bottomWidth) / 2;
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + widthDiff, y + height); // Bottom left
+    ctx.lineTo(x, y); // Top left
+    ctx.lineTo(x + topWidth, y); // Top right
+    ctx.lineTo(x + topWidth - widthDiff, y + height); // Bottom right
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw bucket outline
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw bucket handle
+    ctx.beginPath();
+    ctx.arc(x + topWidth/2, y - 5, topWidth * 0.3, 0, Math.PI, true);
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw player name
+    ctx.fillStyle = '#000';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Your Bucket', x + topWidth/2, y - 25);
+
+    // Draw some water drops
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = '#4169E1';
+      ctx.beginPath();
+      ctx.arc(100 + i * 100, 50 + i * 20, 20, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  </script>
+</body>
+</html>
+

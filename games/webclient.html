@@ -33,6 +33,10 @@
     let canvas, ctx;
     let gameState = null;
 
+    // Keyboard movement state
+    let keysPressed = {};
+    let movementInterval = null;
+
     // Game rendering setup
     function initCanvas() {
       canvas = document.getElementById('gameCanvas');
@@ -41,16 +45,8 @@
 
     function renderGame() {
       if (!gameState || !ctx) {
-        console.log('renderGame: skipped - gameState:', gameState, 'ctx:', ctx);
         return;
       }
-
-      console.log('renderGame: rendering with state:', {
-        drops: gameState.drops ? gameState.drops.length : 0,
-        buckets: gameState.bucketPositions ? Object.keys(gameState.bucketPositions).length : 0,
-        worldWidth: gameState.worldWidth,
-        worldHeight: gameState.worldHeight
-      });
 
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -59,12 +55,9 @@
       const scaleX = canvas.width / gameState.worldWidth;
       const scaleY = canvas.height / gameState.worldHeight;
 
-      console.log('renderGame: scale factors - scaleX:', scaleX, 'scaleY:', scaleY);
-
       // Draw drops
       ctx.fillStyle = '#4169E1'; // Royal blue for water drops
       if (gameState.drops) {
-        console.log('renderGame: drawing', gameState.drops.length, 'drops');
         gameState.drops.forEach((drop, idx) => {
           const x = drop.x * scaleX;
           // Invert Y coordinate: game world has Y=0 at bottom, canvas has Y=0 at top
@@ -72,20 +65,15 @@
           const width = gameState.dropWidth * scaleX;
           const height = gameState.dropHeight * scaleY;
 
-          console.log(`Drop ${idx}: world(x=${drop.x}, y=${drop.y}) -> canvas(x=${x}px, y=${y}px), w=${width}px, h=${height}px`);
-
           // Draw drop as a blue circle
           ctx.beginPath();
           ctx.arc(x + width/2, y + height/2, Math.max(width, height)/2, 0, 2 * Math.PI);
           ctx.fill();
         });
-      } else {
-        console.log('renderGame: no drops to draw');
       }
 
       // Draw buckets
       if (gameState.bucketPositions) {
-        console.log('renderGame: drawing', Object.keys(gameState.bucketPositions).length, 'buckets');
         Object.entries(gameState.bucketPositions).forEach(([playerId, bucketX]) => {
           const x = bucketX * scaleX;
           // Buckets are at the bottom (y=0 in world coords, which is bottom of canvas)
@@ -93,22 +81,38 @@
           const width = gameState.bucketWidth * scaleX;
           const height = gameState.bucketHeight * scaleY;
 
-          console.log(`Bucket ${playerId}: world(x=${bucketX}, y=0) -> canvas(x=${x}px, y=${y}px), w=${width}px, h=${height}px`);
-
           // Use player color or default
           const color = gameState.playerColors && gameState.playerColors[playerId]
             ? gameState.playerColors[playerId]
             : (playerId === myId ? '#FF6B6B' : '#4ECDC4');
 
+          // Draw bucket shape (trapezoid - wider at top, narrower at bottom)
           ctx.fillStyle = color;
 
-          // Draw bucket as a rectangle
-          ctx.fillRect(x, y, width, height);
+          const topWidth = width;
+          const bottomWidth = width * 0.7; // 70% width at bottom
+          const widthDiff = (topWidth - bottomWidth) / 2;
+
+          // Draw trapezoid body
+          ctx.beginPath();
+          ctx.moveTo(x + widthDiff, y + height); // Bottom left
+          ctx.lineTo(x, y); // Top left
+          ctx.lineTo(x + topWidth, y); // Top right
+          ctx.lineTo(x + topWidth - widthDiff, y + height); // Bottom right
+          ctx.closePath();
+          ctx.fill();
 
           // Draw bucket outline
           ctx.strokeStyle = '#333';
           ctx.lineWidth = 2;
-          ctx.strokeRect(x, y, width, height);
+          ctx.stroke();
+
+          // Draw bucket handle (arc on top)
+          ctx.beginPath();
+          ctx.arc(x + topWidth/2, y - 5, topWidth * 0.3, 0, Math.PI, true);
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 2;
+          ctx.stroke();
 
           // Draw player name above bucket
           const playerName = gameState.playerNames && gameState.playerNames[playerId]
@@ -118,10 +122,8 @@
           ctx.fillStyle = '#000';
           ctx.font = '14px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText(playerName, x + width/2, y - 5);
+          ctx.fillText(playerName, x + width/2, y - 25);
         });
-      } else {
-        console.log('renderGame: no buckets to draw');
       }
     }
 
@@ -151,18 +153,15 @@
         };
 
         ws.onmessage = function(event) {
-          console.log('Received message:', event.data);
           try {
             const msg = JSON.parse(event.data);
-            console.log('Parsed message:', msg);
             if (msg.type === 'welcome') {
               myId = msg.playerId;
-              console.log('Welcome received, player ID:', myId);
+              console.log('✅ Joined game as Player', myId);
               updateConnectionStatus('Joined as Player ' + myId, 'green');
               document.getElementById('game').style.display = '';
               initCanvas();
             } else if (msg.type === 'gameState') {
-              console.log('Game state received:', msg);
               gameState = msg;
               updateScoreboard(msg.scoreboard, msg.playerNames);
               renderGame();
@@ -197,6 +196,10 @@
           document.getElementById('game').style.display = 'none';
           myId = null;
           gameState = null;
+
+          // Clean up movement tracking
+          keysPressed = {};
+          stopContinuousMovement();
         };
 
       } catch (connectionError) {
@@ -285,13 +288,58 @@
       }
     }
 
-    // Add keyboard controls
-    document.addEventListener('keydown', function(event) {
-      if (myId && ws && ws.readyState === WebSocket.OPEN) {
-        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
+    // Continuous movement system for faster keyboard controls
+    function startContinuousMovement() {
+      if (movementInterval) return; // Already running
+
+      movementInterval = setInterval(() => {
+        if (!myId || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+        if (keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['A']) {
           sendMove('left');
-        } else if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
+        }
+        if (keysPressed['ArrowRight'] || keysPressed['d'] || keysPressed['D']) {
           sendMove('right');
+        }
+      }, 30); // Send movement command every 30ms for smooth, fast movement
+    }
+
+    function stopContinuousMovement() {
+      if (movementInterval) {
+        clearInterval(movementInterval);
+        movementInterval = null;
+      }
+    }
+
+    // Track key press
+    document.addEventListener('keydown', function(event) {
+      if (!myId) return;
+
+      const key = event.key;
+      if (key === 'ArrowLeft' || key === 'ArrowRight' ||
+          key === 'a' || key === 'A' || key === 'd' || key === 'D') {
+        event.preventDefault(); // Prevent page scrolling
+
+        if (!keysPressed[key]) {
+          keysPressed[key] = true;
+          startContinuousMovement();
+        }
+      }
+    });
+
+    // Track key release
+    document.addEventListener('keyup', function(event) {
+      const key = event.key;
+      if (key === 'ArrowLeft' || key === 'ArrowRight' ||
+          key === 'a' || key === 'A' || key === 'd' || key === 'D') {
+        delete keysPressed[key];
+
+        // Stop interval if no movement keys are pressed
+        const hasMovementKeys = keysPressed['ArrowLeft'] || keysPressed['ArrowRight'] ||
+                                keysPressed['a'] || keysPressed['A'] ||
+                                keysPressed['d'] || keysPressed['D'];
+        if (!hasMovementKeys) {
+          stopContinuousMovement();
         }
       }
     });
