@@ -115,29 +115,45 @@
           const width = gameState.dropWidth * scaleX;
           const height = gameState.dropHeight * scaleY;
 
-          // Make drops bigger and fatter for better visibility
-          const dropWidth = Math.max(width, height) * 0.45; // Bigger width (was 0.25)
-          const dropHeight = Math.max(width, height) * 0.7; // Taller height (was 0.5)
+          // Make drops prettier and 25% smaller
+          const dropWidth = Math.max(width, height) * 0.34; // Reduced from 0.45 (25% smaller)
+          const dropHeight = Math.max(width, height) * 0.53; // Reduced from 0.70 (25% smaller)
           const centerX = x + width/2;
           const centerY = y + height/2;
 
-          // Draw fatter teardrop shape
-          ctx.fillStyle = '#4169E1'; // Royal blue
+          // Draw prettier teardrop with gradient effect
+
+          // Create gradient for depth
+          const gradient = ctx.createRadialGradient(
+            centerX - dropWidth * 0.2, centerY - dropHeight * 0.2, dropWidth * 0.1,
+            centerX, centerY, dropHeight * 0.8
+          );
+          gradient.addColorStop(0, '#87CEEB'); // Light blue at top
+          gradient.addColorStop(0.5, '#4169E1'); // Royal blue middle
+          gradient.addColorStop(1, '#1E3A8A'); // Dark blue at bottom
+
+          ctx.fillStyle = gradient;
           ctx.beginPath();
 
-          // Top rounded part (larger for fatter look)
+          // Top rounded part (smooth teardrop top)
           ctx.arc(centerX, centerY - dropHeight * 0.3, dropWidth * 0.9, 0, Math.PI, true);
 
-          // Bottom pointed part (less elongated, fatter)
+          // Bottom pointed part (elegant taper)
           ctx.quadraticCurveTo(centerX - dropWidth * 0.9, centerY + dropHeight * 0.1, centerX, centerY + dropHeight * 0.7);
           ctx.quadraticCurveTo(centerX + dropWidth * 0.9, centerY + dropHeight * 0.1, centerX + dropWidth * 0.9, centerY - dropHeight * 0.3);
 
           ctx.fill();
 
-          // Add glossy highlight for realistic water effect (bigger)
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          // Add bright glossy highlight for 3D effect
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
           ctx.beginPath();
-          ctx.arc(centerX - dropWidth * 0.25, centerY - dropHeight * 0.25, dropWidth * 0.5, 0, 2 * Math.PI);
+          ctx.ellipse(centerX - dropWidth * 0.3, centerY - dropHeight * 0.3, dropWidth * 0.4, dropWidth * 0.6, -30 * Math.PI / 180, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // Add smaller secondary highlight
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.beginPath();
+          ctx.arc(centerX + dropWidth * 0.2, centerY - dropHeight * 0.1, dropWidth * 0.2, 0, 2 * Math.PI);
           ctx.fill();
         });
       }

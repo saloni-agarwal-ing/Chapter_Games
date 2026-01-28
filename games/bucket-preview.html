@@ -30,8 +30,10 @@
       <li>✅ Bucket has trapezoid shape (wider at top, narrower at bottom)</li>
       <li>✅ Bucket has a handle on top (curved arc)</li>
       <li>✅ Player name bold and centered in bucket with outline</li>
-      <li>✅ Water drops are smaller and more elongated (realistic teardrops)</li>
-      <li>✅ Rain clouds at the top showing it's raining</li>
+      <li>✅ Water drops with beautiful gradient (light to dark blue)</li>
+      <li>✅ Dual highlights for 3D glossy water effect</li>
+      <li>✅ Perfect size droplets (12×21px) - not too big, not too small</li>
+      <li>✅ Beautiful white fluffy clouds at the top</li>
       <li>✅ Much faster keyboard controls (continuous movement)</li>
       <li>✅ Smoother gameplay - hold down arrow keys for fast movement</li>
     </ul>
@@ -126,32 +128,47 @@
     ctx.strokeText('Your Bucket', x + topWidth/2, y + height/2 + 6);
     ctx.fillText('Your Bucket', x + topWidth/2, y + height/2 + 6);
 
-    // Draw bigger, fatter water drops (teardrop shape)
+    // Draw prettier, 25% smaller water drops with gradient
     for (let i = 0; i < 3; i++) {
       const dropX = 100 + i * 100;
       const dropY = 60 + i * 25;
 
-      // Bigger and fatter dimensions
-      const dropWidth = 16;  // Wider for fatter look
-      const dropHeight = 28; // Taller but proportional
+      // 25% smaller dimensions (was 16 × 28)
+      const dropWidth = 12;  // Reduced from 16
+      const dropHeight = 21; // Reduced from 28
 
-      ctx.fillStyle = '#4169E1';
+      // Create gradient for depth and beauty
+      const gradient = ctx.createRadialGradient(
+        dropX - dropWidth * 0.2, dropY - dropHeight * 0.2, dropWidth * 0.1,
+        dropX, dropY, dropHeight * 0.8
+      );
+      gradient.addColorStop(0, '#87CEEB'); // Light blue at top
+      gradient.addColorStop(0.5, '#4169E1'); // Royal blue middle
+      gradient.addColorStop(1, '#1E3A8A'); // Dark blue at bottom
+
+      ctx.fillStyle = gradient;
       ctx.beginPath();
 
-      // Draw fatter teardrop shape
-      // Top rounded part (larger semi-circle for fatter look)
+      // Draw elegant teardrop shape
+      // Top rounded part
       ctx.arc(dropX, dropY - dropHeight * 0.3, dropWidth * 0.9, 0, Math.PI, true);
 
-      // Bottom pointed part (less elongated, fatter)
+      // Bottom pointed part (elegant taper)
       ctx.quadraticCurveTo(dropX - dropWidth * 0.9, dropY + dropHeight * 0.1, dropX, dropY + dropHeight * 0.7);
       ctx.quadraticCurveTo(dropX + dropWidth * 0.9, dropY + dropHeight * 0.1, dropX + dropWidth * 0.9, dropY - dropHeight * 0.3);
 
       ctx.fill();
 
-      // Add highlight for glossy effect (bigger)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      // Add bright glossy highlight for 3D effect (elliptical)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.beginPath();
-      ctx.arc(dropX - dropWidth * 0.25, dropY - dropHeight * 0.25, dropWidth * 0.5, 0, 2 * Math.PI);
+      ctx.ellipse(dropX - dropWidth * 0.3, dropY - dropHeight * 0.3, dropWidth * 0.4, dropWidth * 0.6, -30 * Math.PI / 180, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Add smaller secondary highlight for realism
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.beginPath();
+      ctx.arc(dropX + dropWidth * 0.2, dropY - dropHeight * 0.1, dropWidth * 0.2, 0, 2 * Math.PI);
       ctx.fill();
     }
   </script>
