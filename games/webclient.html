@@ -43,6 +43,43 @@
       ctx = canvas.getContext('2d');
     }
 
+    // Draw rain clouds at the top of the screen
+    function drawClouds() {
+      if (!canvas || !ctx) return;
+
+      // Cloud positions (static for now)
+      const clouds = [
+        { x: 100, y: 30, size: 40 },
+        { x: 250, y: 20, size: 50 },
+        { x: 450, y: 35, size: 45 },
+        { x: 650, y: 25, size: 55 },
+      ];
+
+      clouds.forEach(cloud => {
+        // Draw fluffy cloud using overlapping circles
+        ctx.fillStyle = '#B0B0B0'; // Gray cloud color
+
+        // Main cloud body (3 overlapping circles)
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cloud.x - cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(cloud.x + cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Add darker bottom for rain cloud effect
+        ctx.fillStyle = '#808080';
+        ctx.beginPath();
+        ctx.ellipse(cloud.x, cloud.y + cloud.size * 0.3, cloud.size * 0.6, cloud.size * 0.2, 0, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+    }
+
     function renderGame() {
       if (!gameState || !ctx) {
         return;
@@ -55,6 +92,9 @@
       const scaleX = canvas.width / gameState.worldWidth;
       const scaleY = canvas.height / gameState.worldHeight;
 
+      // Draw rain clouds at the top
+      drawClouds();
+
       // Draw drops
       ctx.fillStyle = '#4169E1'; // Royal blue for water drops
       if (gameState.drops) {
@@ -65,27 +105,29 @@
           const width = gameState.dropWidth * scaleX;
           const height = gameState.dropHeight * scaleY;
 
-          const dropSize = Math.max(width, height) / 2;
+          // Make drops smaller (50% of original size) and more elongated
+          const dropWidth = Math.max(width, height) * 0.25; // Much smaller width
+          const dropHeight = Math.max(width, height) * 0.5; // Taller height for elongated look
           const centerX = x + width/2;
           const centerY = y + height/2;
 
-          // Draw teardrop shape (rounded top, pointed bottom)
+          // Draw elongated teardrop shape (thin and tall)
           ctx.fillStyle = '#4169E1'; // Royal blue
           ctx.beginPath();
 
-          // Top rounded part (semi-circle)
-          ctx.arc(centerX, centerY - dropSize * 0.3, dropSize * 0.7, 0, Math.PI, true);
+          // Top rounded part (small semi-circle)
+          ctx.arc(centerX, centerY - dropHeight * 0.35, dropWidth * 0.8, 0, Math.PI, true);
 
-          // Bottom pointed part (using quadratic curves)
-          ctx.quadraticCurveTo(centerX - dropSize * 0.7, centerY + dropSize * 0.3, centerX, centerY + dropSize);
-          ctx.quadraticCurveTo(centerX + dropSize * 0.7, centerY + dropSize * 0.3, centerX + dropSize * 0.7, centerY - dropSize * 0.3);
+          // Bottom pointed part (using quadratic curves for elongated shape)
+          ctx.quadraticCurveTo(centerX - dropWidth * 0.8, centerY, centerX, centerY + dropHeight * 0.65);
+          ctx.quadraticCurveTo(centerX + dropWidth * 0.8, centerY, centerX + dropWidth * 0.8, centerY - dropHeight * 0.35);
 
           ctx.fill();
 
-          // Add glossy highlight for realistic water effect
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          // Add glossy highlight for realistic water effect (smaller)
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
           ctx.beginPath();
-          ctx.arc(centerX - dropSize * 0.2, centerY - dropSize * 0.4, dropSize * 0.25, 0, 2 * Math.PI);
+          ctx.arc(centerX - dropWidth * 0.3, centerY - dropHeight * 0.3, dropWidth * 0.4, 0, 2 * Math.PI);
           ctx.fill();
         });
       }

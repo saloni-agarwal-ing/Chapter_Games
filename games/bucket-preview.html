@@ -29,15 +29,48 @@
     <ul>
       <li>✅ Bucket has trapezoid shape (wider at top, narrower at bottom)</li>
       <li>✅ Bucket has a handle on top (curved arc)</li>
+      <li>✅ Player name bold and centered in bucket with outline</li>
+      <li>✅ Water drops are smaller and more elongated (realistic teardrops)</li>
+      <li>✅ Rain clouds at the top showing it's raining</li>
       <li>✅ Much faster keyboard controls (continuous movement)</li>
-      <li>✅ Smoother gameplay - holds down arrow keys for fast movement</li>
-      <li>✅ Reduced console spam - cleaner logs</li>
+      <li>✅ Smoother gameplay - hold down arrow keys for fast movement</li>
     </ul>
   </div>
 
   <script>
     const canvas = document.getElementById('preview');
     const ctx = canvas.getContext('2d');
+
+    // Draw rain clouds at the top
+    const clouds = [
+      { x: 80, y: 20, size: 30 },
+      { x: 200, y: 15, size: 35 },
+      { x: 320, y: 22, size: 32 },
+    ];
+
+    clouds.forEach(cloud => {
+      // Draw fluffy cloud using overlapping circles
+      ctx.fillStyle = '#B0B0B0'; // Gray cloud color
+
+      // Main cloud body (3 overlapping circles)
+      ctx.beginPath();
+      ctx.arc(cloud.x, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cloud.x - cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cloud.x + cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Add darker bottom for rain cloud effect
+      ctx.fillStyle = '#808080';
+      ctx.beginPath();
+      ctx.ellipse(cloud.x, cloud.y + cloud.size * 0.3, cloud.size * 0.6, cloud.size * 0.2, 0, 0, 2 * Math.PI);
+      ctx.fill();
+    });
 
     // Draw a sample bucket
     const x = 150;
@@ -81,28 +114,32 @@
     ctx.strokeText('Your Bucket', x + topWidth/2, y + height/2 + 6);
     ctx.fillText('Your Bucket', x + topWidth/2, y + height/2 + 6);
 
-    // Draw some water drops (teardrop shape)
+    // Draw smaller, elongated water drops (teardrop shape)
     for (let i = 0; i < 3; i++) {
       const dropX = 100 + i * 100;
-      const dropY = 50 + i * 20;
-      const dropSize = 20;
+      const dropY = 60 + i * 25;
+
+      // Smaller and more elongated dimensions
+      const dropWidth = 8;  // Much smaller width
+      const dropHeight = 20; // Taller for elongated teardrop
 
       ctx.fillStyle = '#4169E1';
       ctx.beginPath();
 
-      // Draw teardrop shape (circle at top, point at bottom)
-      // Top circle part
-      ctx.arc(dropX, dropY - dropSize * 0.3, dropSize * 0.7, 0, Math.PI, true);
-      // Bottom point
-      ctx.quadraticCurveTo(dropX - dropSize * 0.7, dropY + dropSize * 0.3, dropX, dropY + dropSize);
-      ctx.quadraticCurveTo(dropX + dropSize * 0.7, dropY + dropSize * 0.3, dropX + dropSize * 0.7, dropY - dropSize * 0.3);
+      // Draw elongated teardrop shape (thin top, pointed bottom)
+      // Top rounded part (small semi-circle)
+      ctx.arc(dropX, dropY - dropHeight * 0.35, dropWidth * 0.8, 0, Math.PI, true);
+
+      // Bottom pointed part (elongated)
+      ctx.quadraticCurveTo(dropX - dropWidth * 0.8, dropY, dropX, dropY + dropHeight * 0.65);
+      ctx.quadraticCurveTo(dropX + dropWidth * 0.8, dropY, dropX + dropWidth * 0.8, dropY - dropHeight * 0.35);
 
       ctx.fill();
 
-      // Add highlight for glossy effect
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      // Add highlight for glossy effect (smaller)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.beginPath();
-      ctx.arc(dropX - dropSize * 0.2, dropY - dropSize * 0.4, dropSize * 0.25, 0, 2 * Math.PI);
+      ctx.arc(dropX - dropWidth * 0.3, dropY - dropHeight * 0.3, dropWidth * 0.4, 0, 2 * Math.PI);
       ctx.fill();
     }
   </script>
