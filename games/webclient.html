@@ -11,34 +11,138 @@
 <body>
   <h1>Web Game Client</h1>
   <div>
+    <strong>Server Status:</strong> <span id="server-status" style="color: #999;">Not checked</span><br>
+    <strong>Connection:</strong> <span id="connection-status" style="color: #999;">Not connected</span>
+  </div>
+  <div>
     <label>Player Name: <input id="playerName" type="text" value="Player" /></label>
     <button id="joinBtn">Join Game</button>
   </div>
   <div id="game" style="display:none;">
     <h3>Use arrow keys or buttons to move your bucket</h3>
-    <button onclick="sendMove('left')">Move Left</button>
-    <button onclick="sendMove('right')">Move Right</button>
+    <canvas id="gameCanvas" width="800" height="600" style="border: 2px solid #333; background: #87CEEB;"></canvas>
+    <div>
+      <button onclick="sendMove('left')">Move Left</button>
+      <button onclick="sendMove('right')">Move Right</button>
+    </div>
     <div id="scoreboard"></div>
   </div>
   <script>
     let ws;
     let myId;
+    let canvas, ctx;
+    let gameState = null;
+
+    // Game rendering setup
+    function initCanvas() {
+      canvas = document.getElementById('gameCanvas');
+      ctx = canvas.getContext('2d');
+    }
+
+    function renderGame() {
+      if (!gameState || !ctx) {
+        console.log('renderGame: skipped - gameState:', gameState, 'ctx:', ctx);
+        return;
+      }
+
+      console.log('renderGame: rendering with state:', {
+        drops: gameState.drops ? gameState.drops.length : 0,
+        buckets: gameState.bucketPositions ? Object.keys(gameState.bucketPositions).length : 0,
+        worldWidth: gameState.worldWidth,
+        worldHeight: gameState.worldHeight
+      });
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Calculate scale factors to fit the game world in the canvas
+      const scaleX = canvas.width / gameState.worldWidth;
+      const scaleY = canvas.height / gameState.worldHeight;
+
+      console.log('renderGame: scale factors - scaleX:', scaleX, 'scaleY:', scaleY);
+
+      // Draw drops
+      ctx.fillStyle = '#4169E1'; // Royal blue for water drops
+      if (gameState.drops) {
+        console.log('renderGame: drawing', gameState.drops.length, 'drops');
+        gameState.drops.forEach((drop, idx) => {
+          const x = drop.x * scaleX;
+          // Invert Y coordinate: game world has Y=0 at bottom, canvas has Y=0 at top
+          const y = (gameState.worldHeight - drop.y) * scaleY;
+          const width = gameState.dropWidth * scaleX;
+          const height = gameState.dropHeight * scaleY;
+
+          console.log(`Drop ${idx}: world(x=${drop.x}, y=${drop.y}) -> canvas(x=${x}px, y=${y}px), w=${width}px, h=${height}px`);
+
+          // Draw drop as a blue circle
+          ctx.beginPath();
+          ctx.arc(x + width/2, y + height/2, Math.max(width, height)/2, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+      } else {
+        console.log('renderGame: no drops to draw');
+      }
+
+      // Draw buckets
+      if (gameState.bucketPositions) {
+        console.log('renderGame: drawing', Object.keys(gameState.bucketPositions).length, 'buckets');
+        Object.entries(gameState.bucketPositions).forEach(([playerId, bucketX]) => {
+          const x = bucketX * scaleX;
+          // Buckets are at the bottom (y=0 in world coords, which is bottom of canvas)
+          const y = (gameState.worldHeight - gameState.bucketHeight) * scaleY;
+          const width = gameState.bucketWidth * scaleX;
+          const height = gameState.bucketHeight * scaleY;
+
+          console.log(`Bucket ${playerId}: world(x=${bucketX}, y=0) -> canvas(x=${x}px, y=${y}px), w=${width}px, h=${height}px`);
+
+          // Use player color or default
+          const color = gameState.playerColors && gameState.playerColors[playerId]
+            ? gameState.playerColors[playerId]
+            : (playerId === myId ? '#FF6B6B' : '#4ECDC4');
+
+          ctx.fillStyle = color;
+
+          // Draw bucket as a rectangle
+          ctx.fillRect(x, y, width, height);
+
+          // Draw bucket outline
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, width, height);
+
+          // Draw player name above bucket
+          const playerName = gameState.playerNames && gameState.playerNames[playerId]
+            ? gameState.playerNames[playerId]
+            : `Player ${playerId}`;
+
+          ctx.fillStyle = '#000';
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(playerName, x + width/2, y - 5);
+        });
+      } else {
+        console.log('renderGame: no buckets to draw');
+      }
+    }
 
     document.getElementById('joinBtn').onclick = function() {
       // Connect directly to the Java WebSocket server (no websockify proxy)
-      // The Java server is running on the main domain port
+      // The Java server is running on port 8887
       const wsUrl = window.location.protocol === 'https:' ?
         'wss://' + window.location.host :
-        'ws://' + window.location.hostname + (window.location.hostname === 'localhost' ? ':10000' : '');
+        'ws://' + window.location.hostname + ':8887';
 
       console.log('Connecting directly to Java WebSocket server:', wsUrl);
       console.log('Current location:', window.location);
+
+      updateConnectionStatus('Connecting...', 'orange');
 
       try {
         ws = new WebSocket(wsUrl);
 
         ws.onopen = function() {
           console.log('WebSocket connection opened successfully');
+          updateConnectionStatus('Connected', 'green');
           const joinMessage = {type: 'join', playerName: document.getElementById('playerName').value};
           console.log('Sending join message:', joinMessage);
           ws.send(JSON.stringify(joinMessage));
@@ -54,10 +158,14 @@
             if (msg.type === 'welcome') {
               myId = msg.playerId;
               console.log('Welcome received, player ID:', myId);
+              updateConnectionStatus('Joined as Player ' + myId, 'green');
               document.getElementById('game').style.display = '';
+              initCanvas();
             } else if (msg.type === 'gameState') {
               console.log('Game state received:', msg);
+              gameState = msg;
               updateScoreboard(msg.scoreboard, msg.playerNames);
+              renderGame();
             }
           } catch (parseError) {
             console.error('Error parsing message:', parseError, 'Raw message:', event.data);
@@ -66,11 +174,13 @@
 
         ws.onerror = function(error) {
           console.error('WebSocket error occurred:', error);
+          updateConnectionStatus('Connection Error', 'red');
           alert('Connection error: Unable to connect to game server. Please check your internet connection and try again.');
         };
 
         ws.onclose = function(event) {
           console.log('WebSocket connection closed. Code:', event.code, 'Reason:', event.reason, 'Clean:', event.wasClean);
+          updateConnectionStatus('Disconnected (Code: ' + event.code + ')', 'red');
           if (event.code === 1006) {
             alert('Connection failed: Could not connect to game server. The server may be temporarily unavailable.');
           } else if (event.code === 1011) {
@@ -86,13 +196,21 @@
           document.getElementById('playerName').disabled = false;
           document.getElementById('game').style.display = 'none';
           myId = null;
+          gameState = null;
         };
 
       } catch (connectionError) {
         console.error('Error creating WebSocket:', connectionError);
+        updateConnectionStatus('Failed to create connection', 'red');
         alert('Failed to create WebSocket connection: ' + connectionError.message);
       }
     };
+
+    function updateConnectionStatus(message, color) {
+      const statusSpan = document.getElementById('connection-status');
+      statusSpan.textContent = message;
+      statusSpan.style.color = color;
+    }
 
     function checkServerStatus() {
       const statusSpan = document.getElementById('server-status');
@@ -119,7 +237,7 @@
       const statusSpan = document.getElementById('server-status');
       const wsUrl = window.location.protocol === 'https:' ?
         'wss://' + window.location.host :
-        'ws://' + window.location.hostname + (window.location.hostname === 'localhost' ? ':10000' : '');
+        'ws://' + window.location.hostname + ':8887';
 
       console.log('Testing WebSocket to:', wsUrl);
 
