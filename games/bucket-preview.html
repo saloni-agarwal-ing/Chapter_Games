@@ -49,26 +49,38 @@
     ];
 
     clouds.forEach(cloud => {
-      // Draw fluffy cloud using overlapping circles
-      ctx.fillStyle = '#B0B0B0'; // Gray cloud color
+      // Draw prettier fluffy cloud with gradient effect
 
-      // Main cloud body (3 overlapping circles)
+      // Main cloud body (multiple overlapping circles for fluffy look)
+      ctx.fillStyle = '#FFFFFF'; // White cloud base
+
+      // Bottom puffs (larger)
       ctx.beginPath();
-      ctx.arc(cloud.x, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
+      ctx.arc(cloud.x - cloud.size * 0.5, cloud.y + cloud.size * 0.15, cloud.size * 0.45, 0, 2 * Math.PI);
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc(cloud.x - cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+      ctx.arc(cloud.x + cloud.size * 0.5, cloud.y + cloud.size * 0.15, cloud.size * 0.45, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Middle puffs
+      ctx.beginPath();
+      ctx.arc(cloud.x - cloud.size * 0.25, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc(cloud.x + cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+      ctx.arc(cloud.x + cloud.size * 0.25, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
       ctx.fill();
 
-      // Add darker bottom for rain cloud effect
-      ctx.fillStyle = '#808080';
+      // Top center puff (largest)
       ctx.beginPath();
-      ctx.ellipse(cloud.x, cloud.y + cloud.size * 0.3, cloud.size * 0.6, cloud.size * 0.2, 0, 0, 2 * Math.PI);
+      ctx.arc(cloud.x, cloud.y - cloud.size * 0.1, cloud.size * 0.55, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Add subtle gray shading at bottom for depth
+      ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(cloud.x, cloud.y + cloud.size * 0.25, cloud.size * 0.7, cloud.size * 0.25, 0, 0, 2 * Math.PI);
       ctx.fill();
     });
 
@@ -114,32 +126,32 @@
     ctx.strokeText('Your Bucket', x + topWidth/2, y + height/2 + 6);
     ctx.fillText('Your Bucket', x + topWidth/2, y + height/2 + 6);
 
-    // Draw smaller, elongated water drops (teardrop shape)
+    // Draw bigger, fatter water drops (teardrop shape)
     for (let i = 0; i < 3; i++) {
       const dropX = 100 + i * 100;
       const dropY = 60 + i * 25;
 
-      // Smaller and more elongated dimensions
-      const dropWidth = 8;  // Much smaller width
-      const dropHeight = 20; // Taller for elongated teardrop
+      // Bigger and fatter dimensions
+      const dropWidth = 16;  // Wider for fatter look
+      const dropHeight = 28; // Taller but proportional
 
       ctx.fillStyle = '#4169E1';
       ctx.beginPath();
 
-      // Draw elongated teardrop shape (thin top, pointed bottom)
-      // Top rounded part (small semi-circle)
-      ctx.arc(dropX, dropY - dropHeight * 0.35, dropWidth * 0.8, 0, Math.PI, true);
+      // Draw fatter teardrop shape
+      // Top rounded part (larger semi-circle for fatter look)
+      ctx.arc(dropX, dropY - dropHeight * 0.3, dropWidth * 0.9, 0, Math.PI, true);
 
-      // Bottom pointed part (elongated)
-      ctx.quadraticCurveTo(dropX - dropWidth * 0.8, dropY, dropX, dropY + dropHeight * 0.65);
-      ctx.quadraticCurveTo(dropX + dropWidth * 0.8, dropY, dropX + dropWidth * 0.8, dropY - dropHeight * 0.35);
+      // Bottom pointed part (less elongated, fatter)
+      ctx.quadraticCurveTo(dropX - dropWidth * 0.9, dropY + dropHeight * 0.1, dropX, dropY + dropHeight * 0.7);
+      ctx.quadraticCurveTo(dropX + dropWidth * 0.9, dropY + dropHeight * 0.1, dropX + dropWidth * 0.9, dropY - dropHeight * 0.3);
 
       ctx.fill();
 
-      // Add highlight for glossy effect (smaller)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      // Add highlight for glossy effect (bigger)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.beginPath();
-      ctx.arc(dropX - dropWidth * 0.3, dropY - dropHeight * 0.3, dropWidth * 0.4, 0, 2 * Math.PI);
+      ctx.arc(dropX - dropWidth * 0.25, dropY - dropHeight * 0.25, dropWidth * 0.5, 0, 2 * Math.PI);
       ctx.fill();
     }
   </script>

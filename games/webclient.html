@@ -56,26 +56,36 @@
       ];
 
       clouds.forEach(cloud => {
-        // Draw fluffy cloud using overlapping circles
-        ctx.fillStyle = '#B0B0B0'; // Gray cloud color
+        // Draw prettier fluffy cloud with white color
+        ctx.fillStyle = '#FFFFFF'; // White cloud base
 
-        // Main cloud body (3 overlapping circles)
+        // Bottom puffs (larger)
         ctx.beginPath();
-        ctx.arc(cloud.x, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
+        ctx.arc(cloud.x - cloud.size * 0.5, cloud.y + cloud.size * 0.15, cloud.size * 0.45, 0, 2 * Math.PI);
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(cloud.x - cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+        ctx.arc(cloud.x + cloud.size * 0.5, cloud.y + cloud.size * 0.15, cloud.size * 0.45, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Middle puffs
+        ctx.beginPath();
+        ctx.arc(cloud.x - cloud.size * 0.25, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(cloud.x + cloud.size * 0.4, cloud.y + cloud.size * 0.1, cloud.size * 0.4, 0, 2 * Math.PI);
+        ctx.arc(cloud.x + cloud.size * 0.25, cloud.y, cloud.size * 0.5, 0, 2 * Math.PI);
         ctx.fill();
 
-        // Add darker bottom for rain cloud effect
-        ctx.fillStyle = '#808080';
+        // Top center puff (largest)
         ctx.beginPath();
-        ctx.ellipse(cloud.x, cloud.y + cloud.size * 0.3, cloud.size * 0.6, cloud.size * 0.2, 0, 0, 2 * Math.PI);
+        ctx.arc(cloud.x, cloud.y - cloud.size * 0.1, cloud.size * 0.55, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Add subtle gray shading at bottom for depth
+        ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(cloud.x, cloud.y + cloud.size * 0.25, cloud.size * 0.7, cloud.size * 0.25, 0, 0, 2 * Math.PI);
         ctx.fill();
       });
     }
@@ -105,29 +115,29 @@
           const width = gameState.dropWidth * scaleX;
           const height = gameState.dropHeight * scaleY;
 
-          // Make drops smaller (50% of original size) and more elongated
-          const dropWidth = Math.max(width, height) * 0.25; // Much smaller width
-          const dropHeight = Math.max(width, height) * 0.5; // Taller height for elongated look
+          // Make drops bigger and fatter for better visibility
+          const dropWidth = Math.max(width, height) * 0.45; // Bigger width (was 0.25)
+          const dropHeight = Math.max(width, height) * 0.7; // Taller height (was 0.5)
           const centerX = x + width/2;
           const centerY = y + height/2;
 
-          // Draw elongated teardrop shape (thin and tall)
+          // Draw fatter teardrop shape
           ctx.fillStyle = '#4169E1'; // Royal blue
           ctx.beginPath();
 
-          // Top rounded part (small semi-circle)
-          ctx.arc(centerX, centerY - dropHeight * 0.35, dropWidth * 0.8, 0, Math.PI, true);
+          // Top rounded part (larger for fatter look)
+          ctx.arc(centerX, centerY - dropHeight * 0.3, dropWidth * 0.9, 0, Math.PI, true);
 
-          // Bottom pointed part (using quadratic curves for elongated shape)
-          ctx.quadraticCurveTo(centerX - dropWidth * 0.8, centerY, centerX, centerY + dropHeight * 0.65);
-          ctx.quadraticCurveTo(centerX + dropWidth * 0.8, centerY, centerX + dropWidth * 0.8, centerY - dropHeight * 0.35);
+          // Bottom pointed part (less elongated, fatter)
+          ctx.quadraticCurveTo(centerX - dropWidth * 0.9, centerY + dropHeight * 0.1, centerX, centerY + dropHeight * 0.7);
+          ctx.quadraticCurveTo(centerX + dropWidth * 0.9, centerY + dropHeight * 0.1, centerX + dropWidth * 0.9, centerY - dropHeight * 0.3);
 
           ctx.fill();
 
-          // Add glossy highlight for realistic water effect (smaller)
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          // Add glossy highlight for realistic water effect (bigger)
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
           ctx.beginPath();
-          ctx.arc(centerX - dropWidth * 0.3, centerY - dropHeight * 0.3, dropWidth * 0.4, 0, 2 * Math.PI);
+          ctx.arc(centerX - dropWidth * 0.25, centerY - dropHeight * 0.25, dropWidth * 0.5, 0, 2 * Math.PI);
           ctx.fill();
         });
       }
