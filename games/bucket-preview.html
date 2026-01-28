@@ -72,11 +72,14 @@
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw player name
-    ctx.fillStyle = '#000';
-    ctx.font = '14px Arial';
+    // Draw player name in the middle of the bucket (bold)
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('Your Bucket', x + topWidth/2, y - 25);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.strokeText('Your Bucket', x + topWidth/2, y + height/2 + 6);
+    ctx.fillText('Your Bucket', x + topWidth/2, y + height/2 + 6);
 
     // Draw some water drops
     for (let i = 0; i < 3; i++) {

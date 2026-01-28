@@ -114,15 +114,23 @@
           ctx.lineWidth = 2;
           ctx.stroke();
 
-          // Draw player name above bucket
+          // Draw player name in the middle of bucket (bold with outline)
           const playerName = gameState.playerNames && gameState.playerNames[playerId]
             ? gameState.playerNames[playerId]
             : `Player ${playerId}`;
 
-          ctx.fillStyle = '#000';
-          ctx.font = '14px Arial';
+          ctx.font = 'bold 16px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText(playerName, x + width/2, y - 25);
+          ctx.textBaseline = 'middle';
+
+          // Draw text outline (black)
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 3;
+          ctx.strokeText(playerName, x + topWidth/2, y + height/2);
+
+          // Draw text fill (white)
+          ctx.fillStyle = '#FFF';
+          ctx.fillText(playerName, x + topWidth/2, y + height/2);
         });
       }
     }
