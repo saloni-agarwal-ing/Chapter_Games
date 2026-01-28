@@ -65,9 +65,27 @@
           const width = gameState.dropWidth * scaleX;
           const height = gameState.dropHeight * scaleY;
 
-          // Draw drop as a blue circle
+          const dropSize = Math.max(width, height) / 2;
+          const centerX = x + width/2;
+          const centerY = y + height/2;
+
+          // Draw teardrop shape (rounded top, pointed bottom)
+          ctx.fillStyle = '#4169E1'; // Royal blue
           ctx.beginPath();
-          ctx.arc(x + width/2, y + height/2, Math.max(width, height)/2, 0, 2 * Math.PI);
+
+          // Top rounded part (semi-circle)
+          ctx.arc(centerX, centerY - dropSize * 0.3, dropSize * 0.7, 0, Math.PI, true);
+
+          // Bottom pointed part (using quadratic curves)
+          ctx.quadraticCurveTo(centerX - dropSize * 0.7, centerY + dropSize * 0.3, centerX, centerY + dropSize);
+          ctx.quadraticCurveTo(centerX + dropSize * 0.7, centerY + dropSize * 0.3, centerX + dropSize * 0.7, centerY - dropSize * 0.3);
+
+          ctx.fill();
+
+          // Add glossy highlight for realistic water effect
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.beginPath();
+          ctx.arc(centerX - dropSize * 0.2, centerY - dropSize * 0.4, dropSize * 0.25, 0, 2 * Math.PI);
           ctx.fill();
         });
       }

@@ -81,11 +81,28 @@
     ctx.strokeText('Your Bucket', x + topWidth/2, y + height/2 + 6);
     ctx.fillText('Your Bucket', x + topWidth/2, y + height/2 + 6);
 
-    // Draw some water drops
+    // Draw some water drops (teardrop shape)
     for (let i = 0; i < 3; i++) {
+      const dropX = 100 + i * 100;
+      const dropY = 50 + i * 20;
+      const dropSize = 20;
+
       ctx.fillStyle = '#4169E1';
       ctx.beginPath();
-      ctx.arc(100 + i * 100, 50 + i * 20, 20, 0, 2 * Math.PI);
+
+      // Draw teardrop shape (circle at top, point at bottom)
+      // Top circle part
+      ctx.arc(dropX, dropY - dropSize * 0.3, dropSize * 0.7, 0, Math.PI, true);
+      // Bottom point
+      ctx.quadraticCurveTo(dropX - dropSize * 0.7, dropY + dropSize * 0.3, dropX, dropY + dropSize);
+      ctx.quadraticCurveTo(dropX + dropSize * 0.7, dropY + dropSize * 0.3, dropX + dropSize * 0.7, dropY - dropSize * 0.3);
+
+      ctx.fill();
+
+      // Add highlight for glossy effect
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.beginPath();
+      ctx.arc(dropX - dropSize * 0.2, dropY - dropSize * 0.4, dropSize * 0.25, 0, 2 * Math.PI);
       ctx.fill();
     }
   </script>
